@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Pomodoro{% endblock %} · GameDev Tools</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Spectral:ital,wght@0,300;0,400;1,300&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pomodoro.css') }}">
+
+{#
+  Die Farbwerte kommen serverseitig in die Seite, nicht per JS danach.
+  Die Navigation macht Vollreloads -- sonst blitzt bei jedem Seitenwechsel
+  das Standardthema auf. Siehe KONZEPT-PROJEKTFARBEN.md, Abschnitt 6.
+#}
+<style>
+#pomo-root {
+{{ palette_css | safe }}
+  --pomo-display: '{{ font }}';
+}
+</style>
+</head>
+
+<body>
+<div id="pomo-root" data-project="{{ project.id if project else '' }}"
+     style="--pomo-card-alpha: {{ settings.biotop_cards if biotop_bg else 100 }}%">
+
+  {#
+    Biotop des laufenden Monats hinter jeder Seite, abgedunkelt; der
+    Projektschleier liegt durchsichtig darueber. Staerken und Animation unter
+    Einstellungen. Die Biotop-Seite zeichnet es selbst gross (biotop_bg = None).
+  #}
+  {% if biotop_bg %}
+    <canvas class="biotop-bg" id="biotop-bg" aria-hidden="true"></canvas>
+    <div class="biotop-dim" style="opacity: {{ settings.biotop_dim / 100 }}"></div>
+    <script type="application/json" id="biotop-bg-data">{{ {'month': biotop_bg, 'animate': settings.biotop_anim == 1} | tojson }}</script>
+  {% endif %}
+  {% if project and project.has_image and config.project_image_veil %}
+    <div class="veil" style="background-image: url('{{ url_for('pomodoro.media', name=project.veil) }}'); opacity: {{ settings.biotop_veil / 100 }}"></div>
+  {% endif %}
+  {% if biotop_bg or (project and project.has_image and config.project_image_veil) %}
+    <div class="scrim"></div>
+  {% endif %}
+  <svg class="grain" aria-hidden="true">
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3"></feTurbulence></filter>
+    <rect width="100%" height="100%" filter="url(#grain)"></rect>
+  </svg>
+
+  {#
+    Statt der Sidebar aus dem Hauptkonzept traegt eine schmale Kopfleiste
+    den Mini-Timer -- Variante 08 hat bewusst keine Sidebar. In GameDevTools
+    haengt sich pomodoro_widget.js stattdessen in die vorhandene Sidebar.
+  #}
+  <header class="topbar">
+    <a class="wordmark" href="/pomodoro">
+      <span class="cg">GameDev</span><span class="atelier">ATELIER</span>
+    </a>
+
+    <nav>
+      <a href="/pomodoro" class="{{ 'on' if active == 'timer' }}">TIMER</a>
+      <a href="/pomodoro/journal" class="{{ 'on' if active == 'journal' }}">JOURNAL</a>
+      <a href="/pomodoro/biotop" class="{{ 'on' if active == 'biotop' }}">BIOTOP</a>
+      <a href="/pomodoro/stats" class="{{ 'on' if active == 'stats' }}">STATISTIK</a>
+      <a href="/pomodoro/projects" class="{{ 'on' if active == 'projects' }}">PROJEKTE</a>
+      <a href="/pomodoro/settings" class="{{ 'on' if active == 'settings' }}">EINSTELLUNGEN</a>
+    </nav>
+
+    <div class="spacer"></div>
+
+    <a id="pomo-mini" class="mini" href="/pomodoro" hidden>
+      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+        <circle cx="13" cy="13" r="10.5" fill="none" stroke="var(--pomo-line)" stroke-width="3"></circle>
+        <circle id="pomo-mini-ring" cx="13" cy="13" r="10.5" fill="none"
+                stroke="var(--pomo-a1)" stroke-width="3" stroke-linecap="round"
+                stroke-dasharray="65.97" stroke-dashoffset="0"
+                transform="rotate(-90 13 13)"></circle>
+      </svg>
+      <span id="pomo-mini-time" class="cg">--:--</span>
+      <span id="pomo-mini-label"></span>
+    </a>
+
+    {#
+      Benutzerwechsel (KONZEPT-BENUTZER.md, 6). Erst ab zwei Benutzern
+      sichtbar -- wer allein ist, sieht nichts Neues. Verwaltet wird unter
+      Einstellungen.
+    #}
+    {% if current_user and all_users | length > 1 %}
+    <div class="user-switch" id="user-switch">
+      <button class="user-chip" id="user-chip" type="button" aria-haspopup="true"
+              aria-expanded="false" title="Benutzer wechseln">
+        <span class="user-dot" style="background: {{ current_user.color }}">{{ current_user.name[:1] | upper }}</span>
+        <span class="user-name">{{ current_user.name }}</span>
+      </button>
+      <div class="user-menu" id="user-menu" role="menu" hidden>
+        {% for u in all_users %}
+        <button class="user-item {{ 'on' if u.id == current_user.id }}" type="button"
+                role="menuitem" data-user="{{ u.id }}">
+          <span class="user-dot small" style="background: {{ u.color }}">{{ u.name[:1] | upper }}</span>
+          <span class="user-item-name">{{ u.name }}</span>
+          <span class="user-item-state" data-state-for="{{ u.id }}">{{ '✓' if u.id == current_user.id }}</span>
+        </button>
+        {% endfor %}
+        <a class="user-manage" href="/pomodoro/settings#benutzer">Benutzer verwalten …</a>
+      </div>
+    </div>
+    {% endif %}
+  </header>
+
+  <main>{% block content %}{% endblock %}</main>
+
+  {#
+    Ebene 3 der Erinnerung: Vollflaechen-Overlay, auf jeder Seite -- nur
+    noch am Ende einer Pause. Das Ende einer Arbeitsphase unterbricht nicht.
+  #}
+  <div id="pomo-overlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="eyebrow" id="pomo-overlay-kind">ARBEITSPHASE FERTIG</div>
+      <div class="cg overlay-time" id="pomo-overlay-title">Fertig</div>
+      <div class="hand" id="pomo-overlay-body">Die Uhr läuft weiter.</div>
+      <div class="overlay-actions">
+        <button class="btn primary" data-act="next">PAUSE STARTEN</button>
+        {# Ersetzt "+ 5 Minuten": Die Uhr zaehlt ohnehin weiter, als Ueberzeit. #}
+        <button class="btn" data-act="keep">WEITERARBEITEN</button>
+        <button class="btn quiet" data-act="done">FERTIG</button>
+      </div>
+      <div class="rating" id="pomo-overlay-rating">
+        <span class="label">WIE WAR DER FOKUS?</span>
+        <div class="stars">
+          {% for i in range(1, 6) %}<button data-rating="{{ i }}">{{ i }}</button>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {#
+    Nach Fertig einer Arbeitsphase: Fokus-Bewertung, ab einer Minute
+    Ueberzeit auch "warum ueberzogen?". Die Sitzung ist schon abgeschlossen
+    und die Pause laeuft -- die Karte annotiert nur.
+  #}
+  <div id="pomo-overtime" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="eyebrow ot" id="pomo-overtime-eyebrow">ABGESCHLOSSEN · PAUSE LÄUFT</div>
+      <div class="cg overlay-time">
+        <span id="pomo-overtime-plan">25:00</span>
+        <span class="ot" id="pomo-overtime-plus">+ <span id="pomo-overtime-over">0:00</span></span>
+      </div>
+      <div id="pomo-overtime-why">
+        <div class="hand">Warum überzogen?</div>
+        <div class="chips">
+          <button class="chip" data-reason="flow">Im Flow</button>
+          <button class="chip" data-reason="unnoticed">Nicht bemerkt</button>
+          <button class="chip" data-reason="finishing">Musste fertig werden</button>
+        </div>
+      </div>
+      <div class="rating">
+        <span class="label">WIE WAR DER FOKUS?</span>
+        <div class="stars">
+          {% for i in range(1, 6) %}<button data-rating="{{ i }}">{{ i }}</button>{% endfor %}
+        </div>
+      </div>
+      <div class="overlay-actions">
+        <button class="btn quiet" data-act="close">SCHLIESSEN</button>
+      </div>
+    </div>
+  </div>
+
+  {#
+    Unbestaetigte Sitzung: Obergrenze der Ueberzeit erreicht, oder die App
+    war beim Ablauf zu. Wie viel davon war Arbeit?
+  #}
+  <div id="pomo-recover" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="eyebrow" id="pomo-recover-eyebrow">SITZUNG OFFEN GEBLIEBEN</div>
+      <div class="cg overlay-time" id="pomo-recover-title">Die App war beim Ablauf zu</div>
+      <div class="hand">Wie viel davon war Arbeit?</div>
+      <div class="overlay-actions">
+        <button class="btn primary" data-mode="all" id="pomo-recover-all">ALLES</button>
+        <button class="btn" data-mode="planned" id="pomo-recover-planned">NUR GEPLANTE</button>
+        <button class="btn quiet" data-mode="discarded">VERWERFEN</button>
+      </div>
+      <div class="pick">
+        <div class="label pick-head">
+          <span>ODER ENDE WÄHLEN</span><span class="ot" id="pomo-recover-pick">--:--</span>
+        </div>
+        <input type="range" id="pomo-recover-range" min="0" max="100" value="0">
+        <div class="pick-scale label">
+          <span id="pomo-recover-start">--:--</span>
+          <span id="pomo-recover-plan">PLAN --:--</span>
+          <span id="pomo-recover-cap">GRENZE --:--</span>
+        </div>
+        <div style="text-align: center; margin-top: 14px;">
+          <button class="btn small" data-mode="until">DIESES ENDE ÜBERNEHMEN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/pomodoro_widget.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pomodoro_biotop.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pomodoro_users.js') }}"></script>
+{% if biotop_bg %}<script src="{{ url_for('static', filename='js/pomodoro_biotop_bg.js') }}"></script>{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

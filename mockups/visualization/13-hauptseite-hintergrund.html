@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pomodoro-Mockup — Biotop als Hintergrund</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap">
+<link rel="stylesheet" href="app.css">
+<style>
+  body { background: #0E0A16; }
+  .page { max-width: 1320px; margin: 0 auto; padding: 26px 20px 80px; }
+  .intro { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+  .intro h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 300; font-size: 34px; }
+  .intro p { color: var(--pomo-muted); font-size: 13.5px; max-width: 640px; margin-top: 4px; }
+
+  /* Bildschirm in Originalgroesse 1280 x 760, per transform eingepasst */
+  .frame-wrap { position: relative; width: 100%; border-radius: 10px; overflow: hidden; border: 1px solid #2a2438; }
+  .frame { position: absolute; left: 0; top: 0; width: 1280px; height: 760px; transform-origin: 0 0; overflow: hidden; background: var(--pomo-bg); }
+  .layer { position: absolute; pointer-events: none; }
+  .bg { inset: 0; width: 100%; height: 100%; display: block; }
+  .dim { inset: 0; background: var(--pomo-bg); }
+  .frame .veil, .frame .scrim { position: absolute; }
+  #bgB { left: 0; right: 0; bottom: 0; top: auto; width: 100%; height: 50%;
+         -webkit-mask-image: linear-gradient(to top, #000 55%, transparent); mask-image: linear-gradient(to top, #000 55%, transparent); }
+  .frame .topbar, .frame .stage { position: relative; z-index: 2; }
+  .frame .topbar { background: color-mix(in srgb, var(--pomo-bg) 35%, transparent); }
+
+  .stage { display: flex; height: calc(760px - 59px); }
+  .timer-pane { width: 680px; flex-shrink: 0; padding: 30px 48px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid color-mix(in srgb, var(--pomo-line) 70%, transparent); }
+  .stats-pane { flex-grow: 1; padding: 30px 34px; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+  .headline { font-size: 44px; font-weight: 300; line-height: 1.05; margin-top: 8px; }
+  .headline em { font-style: italic; background: linear-gradient(94deg, var(--pomo-a1), var(--pomo-a2) 55%, var(--pomo-a4)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .ring-row { display: flex; align-items: center; gap: 30px; margin-top: 20px; }
+  .ring { position: relative; width: 300px; height: 300px; flex-shrink: 0; }
+  .ring-face { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-time { font-size: 84px; font-weight: 300; line-height: .9; letter-spacing: -.03em; }
+  .ring-sub { font-size: 21px; color: var(--pomo-muted); margin-top: 8px; }
+  .meta { display: flex; flex-direction: column; gap: 20px; }
+  .meta-value { font-size: 28px; font-weight: 300; }
+  .goal-dots { display: flex; flex-wrap: wrap; gap: 8px; width: 92px; margin-top: 9px; }
+  .goal-dots div { width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--pomo-line); }
+  .goal-dots div.on { background: linear-gradient(120deg, var(--pomo-a1), var(--pomo-a2)); border-color: transparent; }
+  .controls { display: flex; gap: 11px; margin-top: 26px; }
+  .quote-row { display: flex; align-items: center; gap: 16px; margin-top: 22px; }
+  .quote-row .dash { width: 40px; height: 1px; background: var(--pomo-a3); }
+  .project-pick { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+  .project-pick .img { width: 64px; height: 40px; border-radius: 3px; background: linear-gradient(135deg, #FF9679, #B48DF0); }
+  .project-pick .sel { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; border-bottom: 1px solid var(--pomo-line); padding: 4px 0; flex: 1; }
+  .pal-strip { display: flex; gap: 3px; height: 5px; margin-top: 12px; }
+  .pal-strip div { flex-grow: 1; border-radius: 1px; }
+  .rule { height: 1px; background: var(--pomo-line); }
+  .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .kpi-value { font-size: 34px; font-weight: 300; line-height: 1; }
+  .bio { display: flex; gap: 14px; align-items: center; padding: 12px 14px; border: 1px solid var(--pomo-line); border-radius: 6px; background: color-mix(in srgb, var(--pomo-surface) 70%, transparent); }
+  .bio .grow { flex: 1; }
+  .bio .t { font-size: 15px; }
+  .bio .s { font-size: 11.5px; color: var(--pomo-muted); margin-top: 2px; }
+  .window { position: relative; height: 270px; border-radius: 8px; overflow: hidden; border: 1px solid var(--pomo-line); }
+  .window canvas { display: block; width: 100%; height: 100%; }
+  .window .cap { position: absolute; left: 10px; bottom: 10px; background: rgba(21,16,32,.8); border-radius: 999px; padding: 5px 12px; font-size: 10px; letter-spacing: .2em; }
+  .toast { position: absolute; right: 34px; bottom: 26px; z-index: 5; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .toast div { background: rgba(21,16,32,.92); border: 1px solid var(--pomo-a3); color: var(--pomo-ink); border-radius: 6px; padding: 10px 16px; font-size: 13px; animation: pop .35s ease-out; }
+  .toast div.animal { border-color: var(--pomo-a2); }
+  @keyframes pop { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .frame.vC .timer-pane { border-right-color: var(--pomo-line); }
+
+  /* Einstellungen */
+  .settings { margin-top: 26px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+  .opts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+  .opt { border: 1px solid var(--pomo-line); border-radius: 6px; padding: 10px; background: transparent; text-align: left; }
+  .opt.on { border-color: var(--pomo-a1); }
+  .opt .pv { height: 54px; border-radius: 3px; background: #151020; position: relative; overflow: hidden; margin-bottom: 8px; }
+  .opt .pv i { position: absolute; display: block; }
+  .opt .n { font-size: 11px; letter-spacing: .2em; }
+  .opt .d { font-size: 11px; color: var(--pomo-muted); margin-top: 2px; line-height: 1.35; }
+  .setrow { display: flex; align-items: center; gap: 14px; margin-top: 16px; flex-wrap: wrap; }
+  .setrow .label { min-width: 150px; }
+  .setrow input[type=range] { flex: 1; min-width: 120px; }
+  .setrow .v { min-width: 40px; font-size: 13px; color: var(--pomo-muted); text-align: right; }
+  @media (max-width: 900px) { .settings { grid-template-columns: 1fr; } .opts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <b>MOCKUP</b>
+  <label>Thema <select id="m-theme"><option value="wald">Wald</option><option value="garten">Garten</option></select></label>
+  <label>Jahreszeit <select id="m-season"><option value="">automatisch (November)</option><option value="spring">Frühling</option><option value="summer">Sommer</option><option value="autumn">Herbst</option><option value="winter">Winter</option></select></label>
+  <button id="m-work">Arbeitsphase abschließen</button>
+  <button id="m-act">Aktivität eintragen</button>
+  <a href="../index.html">← Übersicht</a>
+</div>
+
+<div class="page">
+  <div class="intro">
+    <div>
+      <div class="eyebrow">TIMERSEITE · BIOTOP IM HINTERGRUND</div>
+      <h1>Der Monat wächst hinter der Uhr</h1>
+      <p>Drei Varianten, umschaltbar unten in den Einstellungen. Der bisherige Projektschleier (das verschwommene Projektbild)
+        liegt als durchsichtige Schicht über dem Biotop, damit jedes Projekt seine Farbe behält. Die Knöpfe oben in der
+        Mockup-Leiste schließen eine Arbeitsphase ab oder tragen eine Aktivität ein: Die Pflanze wächst sofort mit.</p>
+    </div>
+  </div>
+
+  <div class="frame-wrap" id="fw">
+    <div class="frame vA" id="frame">
+      <canvas class="layer bg" id="bgA"></canvas>
+      <canvas class="layer bg" id="bgB" hidden></canvas>
+      <div class="layer dim" id="dim"></div>
+      <div class="veil" id="veil"></div>
+      <div class="scrim" id="scrim"></div>
+
+      <header class="topbar">
+        <a class="wordmark" href="#"><span class="cg">GameDev</span><span class="atelier">ATELIER</span></a>
+        <nav><a class="on" href="#">TIMER</a><a href="#">JOURNAL</a><a href="12-biotop.html">BIOTOP</a><a href="#">STATISTIK</a><a href="#">PROJEKTE</a><a href="#">EINSTELLUNGEN</a></nav>
+        <div class="mini"><span class="l">FOKUS</span><span class="t cg">18:42</span></div>
+      </header>
+
+      <div class="stage">
+        <div class="timer-pane">
+          <div class="eyebrow">FOKUS · EINHEIT 3 VON 4</div>
+          <div class="cg headline">Tiefe <em>Konzentration</em></div>
+          <div class="ring-row">
+            <div class="ring">
+              <svg width="300" height="300" viewBox="0 0 340 340" aria-hidden="true">
+                <defs><linearGradient id="arc" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#B48DF0"/><stop offset="45%" stop-color="#FF9679"/><stop offset="100%" stop-color="#F6C177"/></linearGradient></defs>
+                <circle cx="170" cy="170" r="163" fill="none" stroke="#2F2A3B" stroke-width="1" stroke-dasharray="2 7"/>
+                <circle cx="170" cy="170" r="150" fill="none" stroke="#2F2A3B" stroke-width="10"/>
+                <circle cx="170" cy="170" r="150" fill="none" stroke="url(#arc)" stroke-width="10" stroke-linecap="round" stroke-dasharray="942.5" stroke-dashoffset="245" transform="rotate(-90 170 170)"/>
+                <circle cx="170" cy="170" r="137" fill="none" stroke="#7BD6BE" stroke-width="1.5" stroke-dasharray="118 640" opacity=".5" transform="rotate(-64 170 170)"/>
+              </svg>
+              <div class="ring-face"><div class="cg ring-time">18:42</div><div class="hand ring-sub">von 25 Minuten</div></div>
+            </div>
+            <div class="meta">
+              <div><div class="label">ENDE</div><div class="cg meta-value">14:37</div></div>
+              <div><div class="label">PRESET</div><div class="cg meta-value" style="font-size: 20px;">25 / 5 / 15</div></div>
+              <div><div class="label">TAGESZIEL</div><div class="goal-dots" id="dots"></div><div class="label" style="margin-top: 9px;"><span id="done">5</span> VON 8</div></div>
+            </div>
+          </div>
+          <div class="controls"><button class="btn primary">PAUSE</button><button class="btn ghost" style="border-color: var(--pomo-a4);">STÖRUNG</button><button class="btn quiet" style="color: var(--pomo-muted);">VERWERFEN</button></div>
+          <div class="quote-row"><div class="dash"></div><div class="hand" style="font-size: 21px; color: var(--pomo-a3);" id="quote">Noch 2 Eichen bis zum nächsten Eichhörnchen.</div></div>
+        </div>
+
+        <div class="stats-pane">
+          <div>
+            <div class="hand" style="font-size: 21px; color: var(--pomo-a3);">Woran arbeitest du?</div>
+            <div class="project-pick"><div class="img"></div><div class="sel">Masterarbeit</div></div>
+            <div class="pal-strip"><div style="background:#151020"></div><div style="background:#1C1528"></div><div style="background:#B48DF0"></div><div style="background:#FF9679"></div><div style="background:#F6C177"></div><div style="background:#7BD6BE"></div><div style="background:#F06D8B"></div></div>
+          </div>
+          <div class="window" id="win" hidden><canvas id="bgC"></canvas><div class="cap" id="win-cap">DEIN WALD IM NOVEMBER</div></div>
+          <div class="rule"></div>
+          <div class="kpis">
+            <div><div class="cg kpi-value" id="k-min">125</div><div class="label" style="margin-top: 7px;">FOKUSMINUTEN HEUTE</div></div>
+            <div><div class="cg kpi-value" style="color: var(--pomo-a3);">92 %</div><div class="label" style="margin-top: 7px;">ABSCHLUSSQUOTE</div></div>
+            <div><div class="cg kpi-value">6</div><div class="label" style="margin-top: 7px;">TAGE STREAK</div></div>
+            <div><div class="cg kpi-value" style="color: var(--pomo-a2);" id="k-plants">44</div><div class="label" style="margin-top: 7px;" id="k-plants-l">PFLANZEN IM NOVEMBER</div></div>
+          </div>
+          <a class="bio" href="12-biotop.html">
+            <div class="grow"><div class="cg t" id="bio-t">Heute +5 im Wald</div><div class="s" id="bio-s">Nächstes Tier: Reh, noch 2 Pflanzen im Unterholz</div></div>
+            <span class="textbtn">BIOTOP →</span>
+          </a>
+        </div>
+      </div>
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+
+  <div class="settings">
+    <div class="card">
+      <h3>EINSTELLUNGEN · HINTERGRUND DER TIMERSEITE</h3>
+      <div class="opts" id="opts">
+        <button class="opt" data-v="off"><div class="pv"><i style="inset:0;background:radial-gradient(circle at 30% 40%,#FF967955,transparent 60%)"></i></div><div class="n">AUS</div><div class="d">Nur Projektschleier wie bisher</div></button>
+        <button class="opt on" data-v="A"><div class="pv"><i style="inset:0;background:#4f6a34"></i><i style="inset:0;background:#15102099"></i></div><div class="n">VOLLBILD</div><div class="d">Biotop hinter allem, abgedunkelt</div></button>
+        <button class="opt" data-v="B"><div class="pv"><i style="left:0;right:0;bottom:0;height:45%;background:linear-gradient(to top,#4f6a34,transparent)"></i></div><div class="n">HORIZONT</div><div class="d">Unten, nach oben ausgeblendet</div></button>
+        <button class="opt" data-v="C"><div class="pv"><i style="right:6px;top:10px;width:40%;height:50%;background:#4f6a34;border-radius:2px"></i></div><div class="n">FENSTER</div><div class="d">Klar sichtbar rechts im Zahlenbereich</div></button>
+      </div>
+      <div class="setrow"><span class="label">BIOTOP ABDUNKELN</span><input type="range" id="s-dim" min="0" max="85" step="1" value="55"><span class="v" id="v-dim">55 %</span></div>
+      <div class="setrow"><span class="label">PROJEKTSCHLEIER</span><input type="range" id="s-veil" min="0" max="60" step="1" value="22"><span class="v" id="v-veil">22 %</span></div>
+      <div class="setrow"><label class="switch"><input type="checkbox" id="s-anim" checked> ANIMATIONEN</label>
+        <span class="note" style="font-size: 11.5px; color: var(--pomo-muted);">Aus: Das Biotop bleibt ein ruhiges Standbild, Tiere stehen still.</span></div>
+    </div>
+    <div class="card">
+      <h3>WAS ZU ENTSCHEIDEN IST</h3>
+      <div style="font-size: 13.5px; line-height: 1.6; margin-top: 10px; color: var(--pomo-ink);">
+        <p><b style="font-weight: 500; color: var(--pomo-a2);">Vollbild</b> wirkt am stärksten, braucht aber Abdunklung, damit Uhr und Zahlen lesbar bleiben.</p>
+        <p style="margin-top: 8px;"><b style="font-weight: 500; color: var(--pomo-a2);">Horizont</b> lässt die Uhr auf ruhigem Grund und zeigt das Biotop wie eine Landschaft am unteren Rand.</p>
+        <p style="margin-top: 8px;"><b style="font-weight: 500; color: var(--pomo-a2);">Fenster</b> zeigt es unverfälscht, aber kleiner, die Timerseite bleibt wie heute.</p>
+        <p style="margin-top: 8px; color: var(--pomo-muted);">Der Projektschleier liegt in allen Varianten über dem Biotop. Bei 0 % ist er aus. Ist ein Fenster im Hintergrund nicht zu sehen, pausiert die Animation.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="welt.js"></script>
+<script>
+(function () {
+  const B = Biotop, $ = id => document.getElementById(id);
+  let theme = 'wald';
+  const entries = B.demo({ year: 2026, month: 11, days: 10, theme });
+  const base = { year: 2026, month: 11, entries, day: 10, theme };
+  const W = {
+    A: new B.World($('bgA'), Object.assign({}, base, { fit: 'cover', camY: 450, labels: true })),
+    B: new B.World($('bgB'), Object.assign({}, base, { fit: 'cover', camY: 600, k: 1.15, labels: true })),
+    C: new B.World($('bgC'), Object.assign({}, base, { fit: 'cover', camY: 440, k: 1.05, labels: true }))
+  };
+  let variant = 'A', goal = 5;
+
+  function fitFrame() { const w = $('fw').clientWidth, k = w / 1280; $('frame').style.transform = `scale(${k})`; $('fw').style.height = (760 * k) + 'px'; }
+  window.addEventListener('resize', fitFrame); fitFrame();
+
+  function applyVariant() {
+    $('frame').className = 'frame v' + variant;
+    $('bgA').hidden = variant !== 'A'; $('bgB').hidden = variant !== 'B'; $('win').hidden = variant !== 'C';
+    const dim = +$('s-dim').value / 100;
+    $('dim').style.opacity = variant === 'A' ? dim : variant === 'B' ? dim * .45 : 0;
+    $('dim').style.display = variant === 'off' || variant === 'C' ? 'none' : '';
+    Object.entries(W).forEach(([k, w]) => w.setAnimate(k === variant && $('s-anim').checked));
+    document.querySelectorAll('.opt').forEach(o => o.classList.toggle('on', o.dataset.v === variant));
+  }
+  function applyVeil() { const v = +$('s-veil').value; $('veil').style.opacity = v / 100; $('scrim').style.opacity = v ? 1 : .5; $('v-veil').textContent = v + ' %'; }
+  function stats() {
+    const w = W[variant] || W.A, inf = w.info(), forest = w.theme === 'wald';
+    const today = w.visible().filter(e => e.d === 10).length;
+    $('k-plants').textContent = inf.total; $('k-plants-l').textContent = 'PFLANZEN IM NOVEMBER';
+    $('bio-t').textContent = `Heute +${today} im ${forest ? 'Wald' : 'Garten'}`;
+    const next = inf.animals.filter(a => a.n < 6 && a.p > 0).sort((a, b) => b.p - a.p)[0];
+    $('bio-s').textContent = next ? `Nächstes Tier: ${next.name}, ${next.txt}` : `${inf.animalsTotal} Tiere sind schon da`;
+    $('quote').textContent = next ? `${next.name}: ${next.txt}.` : 'Alles ist schon da. Schön hier.';
+    $('win-cap').textContent = (forest ? 'DEIN WALD' : 'DEIN GARTEN') + ' IM NOVEMBER · ' + inf.total + ' PFLANZEN';
+    $('dots').innerHTML = Array.from({ length: 8 }, (_, i) => `<div class="${i < goal ? 'on' : ''}"></div>`).join('');
+    $('done').textContent = goal;
+  }
+  function toast(lines) {
+    lines.forEach(([txt, cls]) => {
+      const d = document.createElement('div'); d.textContent = txt; if (cls) d.className = cls;
+      $('toast').appendChild(d); setTimeout(() => d.remove(), 3600);
+    });
+  }
+  function grow(key, label) {
+    const tgt = B.TARGETS.find(t => t.key === key), map = { garten: B.DEFAULT_MAP.garten[key], wald: B.DEFAULT_MAP.wald[key] };
+    let born = [];
+    Object.values(W).forEach(w => { const b = w.addEntry({ d: 10, src: key, plant: map[w.theme], alt: map }); if (w === W[variant]) born = b; });
+    const lines = [[`+1 ${B.PLANTS[map[theme]].name} · ${tgt.name}${label ? ' · ' + label : ''}`]];
+    born.forEach(n => lines.push([`Neu im ${theme === 'wald' ? 'Wald' : 'Garten'}: ${n}`, 'animal']));
+    toast(lines); stats();
+  }
+
+  $('m-work').onclick = () => { goal = Math.min(8, goal + 1); $('k-min').textContent = +$('k-min').textContent + 25; grow('p:masterarbeit', '25 min'); };
+  $('m-act').onclick = () => { const k = ['a:sport', 'a:spazieren', 'a:gitarre'][Math.floor(Math.random() * 3)]; grow(k, 'Journal'); };
+  $('m-theme').onchange = () => { theme = $('m-theme').value; Object.values(W).forEach(w => w.setTheme(theme)); stats(); };
+  $('m-season').onchange = () => Object.values(W).forEach(w => w.setSeason($('m-season').value));
+  $('opts').addEventListener('click', ev => { const o = ev.target.closest('.opt'); if (!o) return; variant = o.dataset.v; applyVariant(); stats(); });
+  $('s-dim').oninput = () => { $('v-dim').textContent = $('s-dim').value + ' %'; applyVariant(); };
+  $('s-veil').oninput = applyVeil;
+  $('s-anim').onchange = applyVariant;
+
+  applyVariant(); applyVeil(); stats();
+})();
+</script>
+</body>
+</html>

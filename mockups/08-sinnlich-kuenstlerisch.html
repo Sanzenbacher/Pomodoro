@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Pomodoro-Mockup — Sinnlich &amp; Künstlerisch</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Jost', sans-serif; background: #0C0A14; display: flex; justify-content: center; padding: 24px; }
+  .frame {
+      width: 1280px; height: 860px; position: relative; overflow: hidden;
+      background: #151020; color: #F6EDE7; display: flex; border-radius: 6px;
+  }
+  button { font-family: 'Jost', sans-serif; cursor: pointer; }
+  .cg { font-family: 'Cormorant Garamond', Georgia, serif; }
+  .hand { font-family: 'Caveat', cursive; }
+  .eyebrow { font-size: 10px; letter-spacing: 0.36em; color: #7BD6BE; }
+  .label { font-size: 10px; letter-spacing: 0.26em; color: rgba(246,237,231,0.42); }
+  .rule { height: 1px; background: linear-gradient(90deg, rgba(255,150,122,0.38), rgba(180,141,240,0.22), rgba(246,237,231,0)); }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <!-- Farbfelder und Papierkorn -->
+  <div style="position: absolute; top: -280px; left: 60px; width: 860px; height: 700px; border-radius: 50%; background: radial-gradient(circle, rgba(255,142,114,0.26) 0%, rgba(21,16,32,0) 66%);"></div>
+  <div style="position: absolute; bottom: -300px; left: 380px; width: 820px; height: 720px; border-radius: 50%; background: radial-gradient(circle, rgba(180,141,240,0.22) 0%, rgba(21,16,32,0) 68%);"></div>
+  <div style="position: absolute; top: 240px; right: -180px; width: 620px; height: 560px; border-radius: 50%; background: radial-gradient(circle, rgba(100,210,179,0.16) 0%, rgba(21,16,32,0) 70%);"></div>
+  <svg style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.4; mix-blend-mode: overlay;" aria-hidden="true">
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3"></feTurbulence></filter>
+    <rect width="100%" height="100%" filter="url(#grain)"></rect>
+  </svg>
+
+  <!-- Hauptfläche -->
+  <div style="flex-grow: 1; display: flex; position: relative; z-index: 2;">
+
+    <!-- Linke Hälfte: der Timer -->
+    <div style="width: 740px; flex-shrink: 0; padding: 42px 60px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid rgba(246,237,231,0.08);">
+
+      <div class="eyebrow">SITZUNG DREI VON VIER</div>
+      <div class="cg" style="font-size: 46px; font-weight: 300; letter-spacing: -0.01em; margin-top: 8px; line-height: 1.05;">
+        Tiefe <span style="font-style: italic; background: linear-gradient(94deg, #FF9679, #F6C177 55%, #B48DF0); -webkit-background-clip: text; background-clip: text; color: transparent;">Konzentration</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 30px; margin-top: 26px;">
+        <div style="position: relative; width: 340px; height: 340px; flex-shrink: 0;">
+          <svg width="340" height="340" viewBox="0 0 340 340" aria-hidden="true">
+            <defs>
+              <linearGradient id="arc" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0%" stop-color="#B48DF0"></stop>
+                <stop offset="45%" stop-color="#FF9679"></stop>
+                <stop offset="100%" stop-color="#F6C177"></stop>
+              </linearGradient>
+            </defs>
+            <!-- gezeichnete Hilfslinie -->
+            <circle cx="170" cy="170" r="163" fill="none" stroke="rgba(246,237,231,0.14)" stroke-width="1" stroke-dasharray="2 7"></circle>
+            <circle cx="170" cy="170" r="150" fill="none" stroke="rgba(246,237,231,0.07)" stroke-width="10"></circle>
+            <!-- verbleibende Zeit -->
+            <circle cx="170" cy="170" r="150" fill="none" stroke="url(#arc)" stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="942.5" stroke-dashoffset="30" transform="rotate(-90 170 170)"></circle>
+            <!-- skizzierter zweiter Bogen -->
+            <circle cx="170" cy="170" r="137" fill="none" stroke="rgba(123,214,190,0.45)" stroke-width="1.5"
+                    stroke-dasharray="118 640" transform="rotate(-64 170 170)"></circle>
+            <circle cx="140" cy="23" r="6" fill="#F6C177"></circle>
+            <circle cx="140" cy="23" r="13" fill="rgba(246,193,119,0.28)"></circle>
+          </svg>
+          <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="cg" style="font-size: 92px; font-weight: 300; line-height: 0.9; letter-spacing: -0.03em;">24:13</div>
+            <div class="hand" style="font-size: 22px; color: rgba(246,237,231,0.55); margin-top: 8px;">von 25 Minuten</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 22px;">
+          <div>
+            <div class="label">ENDE</div>
+            <div class="cg" style="font-size: 30px; font-weight: 300; margin-top: 2px;">14:31</div>
+          </div>
+          <div>
+            <div class="label">PRESET</div>
+            <div class="cg" style="font-size: 22px; font-weight: 300; margin-top: 2px;">25 / 5 / 15</div>
+          </div>
+          <div>
+            <div class="label">TAGESZIEL</div>
+            <div id="dots" style="display: flex; flex-wrap: wrap; gap: 8px; width: 92px; margin-top: 9px;"></div>
+            <div style="font-size: 11px; letter-spacing: 0.14em; color: rgba(246,237,231,0.4); margin-top: 9px;">4 VON 8</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 11px; margin-top: 34px;">
+        <button style="background: linear-gradient(100deg, #FF9679, #F6C177); color: #1B1226; border: none; border-radius: 999px; padding: 14px 38px; font-size: 12px; font-weight: 500; letter-spacing: 0.22em; box-shadow: 0 10px 30px rgba(255,150,121,0.28);">PAUSIEREN</button>
+        <button style="background: transparent; color: #F6EDE7; border: 1px solid rgba(180,141,240,0.55); border-radius: 999px; padding: 14px 24px; font-size: 12px; font-weight: 300; letter-spacing: 0.22em;">STÖRUNG</button>
+        <button style="background: transparent; color: rgba(246,237,231,0.5); border: 1px solid rgba(246,237,231,0.16); border-radius: 999px; padding: 14px 24px; font-size: 12px; font-weight: 300; letter-spacing: 0.22em;">VERWERFEN</button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 16px; margin-top: 30px;">
+        <div style="width: 40px; height: 1px; background: rgba(123,214,190,0.5);"></div>
+        <div class="hand" style="font-size: 21px; color: #7BD6BE;">Vier Stück heute — der Nachmittag gehört dir.</div>
+      </div>
+    </div>
+
+    <!-- Rechte Spalte: Projekt und Statistik -->
+    <div style="flex-grow: 1; padding: 40px 38px; display: flex; flex-direction: column; gap: 22px;">
+
+      <div>
+        <label for="proj" class="hand" style="display: block; font-size: 21px; color: rgba(123,214,190,0.95); margin-bottom: 4px;">Woran arbeitest du?</label>
+        <select id="proj" class="cg" style="width: 100%; font-size: 21px; color: #F6EDE7; background: transparent; border: none; border-bottom: 1px solid rgba(255,150,121,0.45); padding: 7px 0;">
+          <option>Rocketz Flying in the Wind</option>
+          <option>GameDevTools</option>
+        </select>
+        <div style="display: flex; gap: 18px; margin-top: 12px;">
+          <button style="background: none; border: none; padding: 0; font-size: 11px; letter-spacing: 0.2em; color: rgba(246,193,119,0.95);">BEARBEITEN</button>
+          <button style="background: none; border: none; padding: 0; font-size: 11px; letter-spacing: 0.2em; color: rgba(123,214,190,0.95);">NEU</button>
+          <button style="background: none; border: none; padding: 0; font-size: 11px; letter-spacing: 0.2em; color: rgba(240,109,139,0.9);">LÖSCHEN</button>
+        </div>
+        <div style="font-size: 12px; font-weight: 300; color: rgba(246,237,231,0.5); margin-top: 14px; letter-spacing: 0.05em;">Issue #42 · Water flow switch</div>
+      </div>
+
+      <div class="rule"></div>
+
+      <div id="kpis" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 18px;"></div>
+
+      <div class="rule"></div>
+
+      <div>
+        <div class="label" style="color: rgba(255,150,121,0.85);">FOKUS NACH TAGESZEIT</div>
+        <div id="hours" style="display: flex; align-items: flex-end; gap: 3px; height: 92px; margin-top: 14px;"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 0.16em; color: rgba(246,237,231,0.3); margin-top: 7px;">
+          <span>00</span><span>08</span><span>16</span><span>23</span>
+        </div>
+        <div class="hand" style="font-size: 21px; color: #F6C177; margin-top: 12px;">dein bestes Fenster: 15 – 17 Uhr</div>
+      </div>
+
+      <div class="rule"></div>
+
+      <div>
+        <div class="label">SECHS MONATE ARBEIT</div>
+        <div id="heat" style="display: grid; grid-template-rows: repeat(7, 11px); grid-auto-flow: column; gap: 3px; margin-top: 13px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var i;
+
+    var dots = document.getElementById('dots');
+    for (i = 0; i < 8; i++) {
+        var d = document.createElement('div');
+        d.style.cssText = 'width: 11px; height: 11px; border-radius: 50%; ' +
+            (i < 4
+                ? 'background: linear-gradient(120deg, #FF9679, #F6C177);'
+                : 'background: transparent; border: 1px solid rgba(246,237,231,0.25);');
+        dots.appendChild(d);
+    }
+
+    var kpis = [
+        ['1 h 45', 'FOKUS HEUTE', '#F6EDE7'],
+        ['87 %', 'ABSCHLUSSQUOTE', '#7BD6BE'],
+        ['6', 'TAGE IN FOLGE', '#F6C177'],
+        ['1,2', 'Ø STÖRUNGEN', '#F06D8B']
+    ];
+    var kpiBox = document.getElementById('kpis');
+    for (i = 0; i < kpis.length; i++) {
+        var k = document.createElement('div');
+        k.innerHTML =
+            '<div class="cg" style="font-size: 38px; font-weight: 300; line-height: 1; color: ' + kpis[i][2] + ';">' + kpis[i][0] + '</div>' +
+            '<div class="label" style="margin-top: 8px;">' + kpis[i][1] + '</div>';
+        kpiBox.appendChild(k);
+    }
+
+    var data = [2, 1, 0, 0, 0, 0, 3, 9, 22, 41, 58, 63, 38, 29, 52, 71, 66, 48, 31, 24, 18, 11, 7, 4];
+    var hourBox = document.getElementById('hours');
+    for (i = 0; i < data.length; i++) {
+        var v = data[i];
+        var bar = document.createElement('div');
+        bar.style.cssText = 'flex-grow: 1; border-radius: 3px 3px 0 0; height: ' + (Math.round((v / 71) * 88) + 4) + 'px; background: ' +
+            (v > 45 ? 'linear-gradient(180deg, #F6C177, #FF9679)'
+                    : (v > 20 ? 'linear-gradient(180deg, rgba(180,141,240,0.85), rgba(180,141,240,0.35))'
+                              : 'rgba(246,237,231,0.12)')) + ';';
+        hourBox.appendChild(bar);
+    }
+
+    var pal = ['rgba(246,237,231,0.07)', 'rgba(123,214,190,0.35)', 'rgba(180,141,240,0.55)', 'rgba(255,150,121,0.75)', '#F6C177'];
+    var heat = document.getElementById('heat');
+    for (i = 0; i < 126; i++) {
+        var c = document.createElement('div');
+        c.style.cssText = 'width: 11px; height: 11px; border-radius: 2px; background: ' +
+            pal[(i * 5 + (i % 6) * 2 + (i % 13)) % 5] + ';';
+        heat.appendChild(c);
+    }
+})();
+</script>
+</body>
+</html>

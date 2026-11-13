@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Biotop{% endblock %}
+
+{% block content %}
+<div class="wrap biotop-page">
+
+  <div class="page-head">
+    <div>
+      <div class="eyebrow" id="bio-eyebrow">BIOTOP</div>
+      <div class="cg page-title" id="bio-title">Biotop</div>
+    </div>
+    <div class="bio-theme">
+      <div class="label">THEMA DIESES MONATS</div>
+      <div class="seg" id="bio-theme"><button data-t="garten">GARTEN</button><button data-t="wald">WALD</button></div>
+      <div class="note" id="bio-theme-note"></div>
+    </div>
+  </div>
+
+  <div class="bio-stage">
+    <canvas id="bio-world"></canvas>
+    <div class="bio-badge" id="bio-badge"></div>
+    <div class="bio-tip" id="bio-tip" hidden></div>
+    <div class="bio-info" id="bio-info" hidden></div>
+    <div class="bio-zoom">
+      <button id="bio-zo" title="Herauszoomen">−</button>
+      <button id="bio-zr" title="Ansicht zurücksetzen">1×</button>
+      <button id="bio-zi" title="Hineinzoomen">+</button>
+    </div>
+    <div class="bio-tools">
+      <button class="btn small" id="bio-play">MONAT ABSPIELEN</button>
+      <input type="range" id="bio-day" min="1" max="31" step="1" value="1">
+      <div class="cg bio-day" id="bio-day-label"></div>
+      <label class="switch"><input type="checkbox" id="bio-anim" {{ 'checked' if settings.biotop_anim }}> ANIMATIONEN</label>
+    </div>
+  </div>
+  <div class="note" style="margin-top: 8px;">Zoomen mit Strg + Mausrad oder den Knöpfen, verschieben durch Ziehen. Ein Klick auf eine Pflanze zeigt, woher sie kommt und wie weit sie ist.</div>
+
+  <div class="grid k4" style="margin-top: 18px;">
+    <div class="card"><h3>PFLANZEN</h3><div class="cg big" id="bio-k-plants">0</div><div class="note" id="bio-k-plants-n"></div></div>
+    <div class="card"><h3>TIERE</h3><div class="cg big" id="bio-k-animals">0</div><div class="note" id="bio-k-animals-n"></div></div>
+    <div class="card"><h3>PFLANZENSORTEN</h3><div class="cg big" id="bio-k-kinds">0</div><div class="note">eine je Projekt oder Aktivität</div></div>
+    <div class="card"><h3>TIERARTEN</h3><div class="cg big" id="bio-k-species">0 / 7</div><div class="note">kommen, wenn genug wächst</div></div>
+  </div>
+
+  <div class="grid split" style="margin-top: 16px;">
+    <div class="card"><h3>PFLANZEN · EIN EINTRAG, EINE PFLANZE</h3><div id="bio-plants" style="margin-top: 8px;"></div></div>
+    <div class="card"><h3>TIERE · JE MEHR WÄCHST, DESTO MEHR KOMMEN</h3><div id="bio-animals" style="margin-top: 8px;"></div></div>
+  </div>
+
+  <div class="page-head" style="margin-top: 38px;">
+    <div><div class="eyebrow">GALERIE</div><div class="cg" style="font-size: 30px; font-weight: 300;">Vergangene Monate</div></div>
+    <div class="note">Abgeschlossene Monate bleiben, wie sie gewachsen sind.</div>
+  </div>
+  <div class="bio-gallery" id="bio-gallery"></div>
+
+  <div class="page-head" style="margin-top: 38px;" id="zuordnung">
+    <div><div class="eyebrow">PFLANZEN ZUORDNEN</div><div class="cg" style="font-size: 30px; font-weight: 300;">Was wächst wofür?</div></div>
+  </div>
+  <div class="note" style="margin-top: 8px; max-width: 820px;">
+    Jedes Projekt und jede Art von Aktivität hat eine Pflanze im Garten und eine im Wald.
+    Neue bekommen von selbst eine freie. Eine Änderung gilt ab jetzt: Was schon gewachsen ist,
+    bleibt, im laufenden Monat wie in der Galerie.
+  </div>
+  <div class="card" style="margin-top: 14px;" id="bio-map"></div>
+</div>
+
+<script type="application/json" id="bio-data">{{ {'gallery': gallery, 'targets': targets} | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pomodoro_biotop_page.js') }}"></script>
+{% endblock %}

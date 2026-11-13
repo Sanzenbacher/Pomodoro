@@ -1,0 +1,76 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mockups",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "mockups"
+      ],
+      "port": 8765
+    },
+    {
+      "name": "app-test",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "C:/Users/trant/AppData/Local/Temp/claude/003c58fde519a471/b53e5279-3abc-4b0d-8f5c-de98894940b6/scratchpad/run_test_app.py"
+      ],
+      "port": 5399
+    },
+    {
+      "name": "mockups-gelaende",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8767",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "D:/Projects/Pomodoro/mockups"
+      ],
+      "port": 8767,
+      "autoPort": false
+    },
+    {
+      "name": "app-icons",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "C:/Users/trant/AppData/Local/Temp/claude/dfba864767db906d/bf7e53e9-708a-416b-9b3e-e0794409237e/scratchpad/run_icons_test.py"
+      ],
+      "port": 5398
+    },
+    {
+      "name": "app-categories",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "C:/Users/trant/AppData/Local/Temp/claude/8a36735359c52c45/b3ebc2ac-f472-4d43-be3c-bb8b84775ca3/scratchpad/run_categories_app.py"
+      ],
+      "port": 5396
+    },
+    {
+      "name": "app-biotop",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "C:/Users/trant/AppData/Local/Temp/claude/a9f7c80de05eec3a/590aa97f-b427-4d89-8700-ad7166a90910/scratchpad/run_biotop_app.py"
+      ],
+      "port": 5395,
+      "autoPort": false
+    },
+    {
+      "name": "app-users",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "C:/Users/trant/AppData/Local/Temp/claude/53121503ecdd60ae/eceaa046-e8f4-4870-b735-e9d71c060f6e/scratchpad/t5/run_users_app.py"
+      ],
+      "port": 5397,
+      "autoPort": false
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Journal{% endblock %}
+
+{% block content %}
+<div class="wrap">
+
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">JOURNAL</div>
+      <div class="cg page-title">Was sonst <em style="font-style: italic;">noch war</em></div>
+    </div>
+    <div class="hand" style="font-size: 19px; color: var(--pomo-muted);">
+      Zählt nicht als Fokuszeit — außer du trägst Arbeit nach.
+    </div>
+  </div>
+
+  <!-- Eintragen: eine Karte fuer alles, was nicht ueber den Timer lief. -->
+  <div class="card journal-form" id="entry" style="margin-top: 26px;">
+    <div class="chips" id="entry-kinds">
+      <button class="chip on" data-kind="activity">Aktivität</button>
+      <button class="chip" data-kind="feeling">Gefühl</button>
+      <button class="chip" data-kind="work">Arbeit nachtragen</button>
+    </div>
+
+    <div data-for="activity">
+      <div class="journal-head">
+        <div class="hand" style="font-size: 21px; color: var(--pomo-a3);">Was hast du gemacht?</div>
+        <a class="textbtn" href="/pomodoro/projects?filter=journal">BEARBEITEN →</a>
+      </div>
+      <div class="chips" id="activity-chips"></div>
+      <div class="journal-row">
+        <div class="grow">
+          <input class="field" type="text" id="activity-label" maxlength="80"
+                 placeholder="oder selbst eintippen">
+        </div>
+      </div>
+      <div class="label">WIE LANGE?</div>
+      <div class="journal-row">
+        <div class="chips" id="activity-minutes-chips">
+          {% for minutes in [15, 30, 45, 60, 90] %}<button class="chip" data-value="{{ minutes }}">{{ minutes }}</button>{% endfor %}
+        </div>
+        <div class="journal-minutes">
+          <input class="field mono" type="number" id="activity-minutes" min="1" max="1440"
+                 placeholder="Min">
+        </div>
+      </div>
+    </div>
+
+    <div data-for="feeling" hidden>
+      <div class="label">WIE GEHT ES DIR? · 1 MIES · 5 SEHR GUT</div>
+      <div class="rating">
+        <div class="stars" id="mood">
+          {% for i in range(1, 6) %}<button data-mood="{{ i }}">{{ i }}</button>{% endfor %}
+        </div>
+      </div>
+      <div class="label">WAS TRIFFT ZU?</div>
+      <div class="chips" id="feeling-chips">
+        {% for tag in feelings %}<button class="chip" data-value="{{ tag }}">{{ tag }}</button>{% endfor %}
+      </div>
+      <div class="journal-row">
+        <div class="grow">
+          <input class="field" type="text" id="feeling-own" maxlength="40"
+                 placeholder="eigenes Wort, mit Enter hinzufügen">
+        </div>
+      </div>
+    </div>
+
+    <div data-for="work" hidden>
+      <div class="journal-row">
+        <div class="grow">
+          <div class="label">PROJEKT</div>
+          <select class="field" id="work-project">
+            {% for p in projects %}<option value="{{ p.id }}">{{ p.label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="journal-minutes">
+          <div class="label">MINUTEN</div>
+          <input class="field mono" type="number" id="work-minutes" value="25" min="1" max="480">
+        </div>
+      </div>
+      <div class="note">Zählt wie eine Arbeitsphase: Statistik, Tagesziel und Streak.</div>
+    </div>
+
+    <div class="label">AN WELCHEM TAG?</div>
+    <div class="journal-row">
+      <div class="chips" id="day-chips">
+        <button class="chip" data-days="0">Heute</button>
+        <button class="chip" data-days="1">Gestern</button>
+        <button class="chip" data-days="2">Vorgestern</button>
+      </div>
+      <div class="journal-when">
+        <input class="field" type="date" id="entry-date" title="Anderer Tag">
+      </div>
+    </div>
+    <div class="label">UM WIE VIEL UHR?</div>
+    <div class="journal-row">
+      <div class="chips" id="time-chips">
+        <button class="chip on" data-time="now">Jetzt</button>
+        <button class="chip" data-time="morning">Morgens</button>
+        <button class="chip" data-time="noon">Mittags</button>
+        <button class="chip" data-time="evening">Abends</button>
+      </div>
+      <div class="journal-when">
+        <input class="field" type="time" id="entry-time">
+      </div>
+    </div>
+    <div class="hand journal-summary" id="when-summary"></div>
+
+    <div class="journal-row" style="margin-top: 20px;">
+      <div class="grow">
+        <div class="label">NOTIZ</div>
+        <input class="field" type="text" id="entry-note" placeholder="optional">
+      </div>
+      <button class="btn quiet small" id="entry-cancel" hidden>ABBRECHEN</button>
+      <button class="btn primary small" id="entry-save">EINTRAGEN</button>
+    </div>
+  </div>
+
+  <!-- Der Tagesverlauf: Eintraege neben den fertigen Arbeitsphasen. -->
+  {% for bucket in timeline.days %}
+    <section class="journal-day" id="tag-{{ bucket.day }}">
+      <div class="journal-day-head">
+        <span class="cg journal-day-title">{{ bucket.label }}</span>
+        {% if bucket.pomodoros %}
+          <span class="label">{{ bucket.pomodoros }} POMODORO{{ 'S' if bucket.pomodoros != 1 }} · {{ bucket.minutes }} MIN</span>
+          <a class="textbtn" href="/pomodoro/stats?range=all&day={{ bucket.day }}#sitzungen">IN DER STATISTIK</a>
+        {% endif %}
+      </div>
+      {% for item in bucket['items'] %}
+        <div class="journal-item {{ item.type }}">
+          <span class="mono journal-clock">{{ item.clock }}</span>
+          <i class="journal-dot"></i>
+          <div class="journal-body">
+            {% if item.type == 'feeling' %}
+              <span class="journal-mood" title="Stimmung {{ item.mood }} von 5">
+                {% for i in range(1, 6) %}<i class="{{ 'on' if i <= item.mood }}"></i>{% endfor %}
+              </span>
+              {% for tag in item.tags %}<span class="pill">{{ tag }}</span>{% endfor %}
+            {% else %}
+              {% if item.project_id in category_views %}{{ project_icon(category_views[item.project_id], 20, 'picon journal-icon') }}{% endif %}
+              <span {{ 'data-activity' if item.type == 'activity' }}>{{ item.label }}</span>
+              {% if item.minutes %}<span class="mono journal-meta">{{ item.minutes }} min</span>{% endif %}
+              {% if item.type == 'pomodoro' and item.rating %}<span class="mono journal-meta">Fokus {{ item.rating }}</span>{% endif %}
+              {% if item.type == 'pomodoro' and item.manual %}<span class="pill">nachgetragen</span>{% endif %}
+            {% endif %}
+            {% if item.note %}<div class="journal-note">{{ item.note }}</div>{% endif %}
+          </div>
+          {% if item.type != 'pomodoro' %}
+            <div class="journal-actions">
+              <button class="textbtn" data-edit="{{ item.id }}">BEARBEITEN</button>
+              <button class="textbtn danger" data-del="{{ item.id }}">LÖSCHEN</button>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </section>
+  {% else %}
+    <div class="hand" style="font-size: 22px; color: var(--pomo-muted); margin-top: 34px;">
+      Noch nichts notiert.
+    </div>
+  {% endfor %}
+
+  {% if timeline.more %}
+    <div style="text-align: center; margin-top: 26px;">
+      <a class="textbtn" href="?days={{ timeline.shown + 30 }}">ÄLTERE TAGE</a>
+    </div>
+  {% endif %}
+</div>
+
+<script id="journal-data" type="application/json">{{ timeline.entries | tojson }}</script>
+<script id="activity-data" type="application/json">{{ activities | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pomodoro_journal.js') }}"></script>
+{% endblock %}

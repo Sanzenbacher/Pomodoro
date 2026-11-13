@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Pomodoro-Mockup — Projektfarben aus dem Bild</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Spectral:ital,wght@0,300;0,400;1,300&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* Alles Farbige hängt an diesen neun Variablen. Sie kommen aus dem Projektbild.
+     Geometrie, Abstände und Schriftgrößen sind fix — nur so bleiben alle
+     Projekte erkennbar dieselbe Anwendung. */
+  .frame {
+      --bg:      #151020;
+      --surface: #1C1528;
+      --ink:     #F6EDE7;
+      --muted:   rgba(246,237,231,0.45);
+      --line:    rgba(246,237,231,0.10);
+      --a1:      #FF9679;   /* Leitfarbe: Ring, Primärknopf, aktive Zustände */
+      --a2:      #F6C177;   /* Begleiter: zweiter Verlaufsstopp, Zahlen */
+      --a3:      #7BD6BE;   /* Gegenfarbe: Notizen, positive Kennzahl */
+      --a4:      #B48DF0;   /* Dritte: Ringanfang, mittlere Balken */
+      --warn:    #F06D8B;   /* fix, siehe Konzept: Störung und Löschen */
+      --display: 'Cormorant Garamond';
+  }
+
+  body { font-family: 'Jost', sans-serif; background: #0A0810; display: flex; justify-content: center; padding: 24px; }
+  button, select { font-family: 'Jost', sans-serif; cursor: pointer; }
+
+  .frame {
+      width: 1280px; height: 860px; position: relative; overflow: hidden;
+      background: var(--bg); color: var(--ink);
+      display: flex; flex-direction: column; border-radius: 6px;
+      transition: background-color .5s ease, color .5s ease;
+  }
+  .cg { font-family: var(--display), Georgia, serif; }
+  .hand { font-family: 'Caveat', cursive; }
+  .eyebrow { font-size: 10px; letter-spacing: 0.36em; color: var(--a3); transition: color .5s ease; }
+  .label { font-size: 10px; letter-spacing: 0.26em; color: var(--muted); transition: color .5s ease; }
+
+  .veil {
+      position: absolute; inset: -60px; background-size: cover; background-position: center;
+      filter: blur(52px) saturate(1.2); opacity: 0; transition: opacity .6s ease;
+      pointer-events: none;
+  }
+  .veil.on { opacity: 0.30; }
+  .scrim {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at 28% 45%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 70%);
+      opacity: 0; transition: opacity .6s ease;
+  }
+  .scrim.on { opacity: 1; }
+  .grain { position: absolute; inset: 0; opacity: 0.4; mix-blend-mode: overlay; pointer-events: none; }
+
+  .stage { flex-grow: 1; display: flex; position: relative; z-index: 2; min-height: 0; }
+  .timerPane {
+      width: 740px; flex-shrink: 0; padding: 36px 44px;
+      display: flex; flex-direction: column; justify-content: center;
+      border-right: 1px solid var(--line); transition: border-color .5s ease;
+  }
+  .statsPane { flex-grow: 1; padding: 34px 34px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+  .rule { height: 1px; background: var(--line); transition: background-color .5s ease; }
+
+  .btn {
+      border-radius: 999px; padding: 13px 22px; font-size: 12px; font-weight: 300;
+      letter-spacing: 0.22em; background: transparent; color: var(--ink);
+      border: 1px solid var(--line); transition: all .5s ease;
+  }
+  .btn.primary {
+      color: var(--bg); border: none; padding: 13px 36px; font-weight: 500;
+      background: linear-gradient(100deg, var(--a1), var(--a2));
+  }
+  .btn.ghost { border-color: var(--a4); }
+  .btn.quiet { color: var(--muted); }
+
+  .textbtn { background: none; border: none; padding: 0; font-size: 11px; letter-spacing: 0.2em; transition: color .5s ease; }
+
+  svg stop { transition: stop-color .5s ease; }
+
+  /* Filmstreifen: nur Mockup-Möbel, im Produkt wählt das die Projektliste */
+  .strip {
+      height: 122px; flex-shrink: 0; position: relative; z-index: 2;
+      border-top: 1px solid var(--line); background: rgba(0,0,0,0.25);
+      display: flex; align-items: center; gap: 14px; padding: 0 24px;
+      transition: border-color .5s ease;
+  }
+  .chip { position: relative; cursor: pointer; border-radius: 4px; overflow: hidden; line-height: 0; }
+  .chip canvas { display: block; width: 126px; height: 74px; opacity: 0.55; transition: opacity .3s ease; }
+  .chip.active canvas, .chip:hover canvas { opacity: 1; }
+  .chip .nm {
+      position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 8px 5px;
+      font-size: 10px; letter-spacing: 0.1em; line-height: 1.2; color: #FFFFFF;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 60%);
+  }
+  .chip.active { outline: 2px solid var(--a1); outline-offset: 2px; }
+
+  .toggle {
+      font-size: 11px; letter-spacing: 0.18em; padding: 9px 16px; border-radius: 999px;
+      border: 1px solid var(--line); background: transparent; color: var(--muted); transition: all .4s ease;
+  }
+  .toggle.on { color: var(--bg); background: var(--a3); border-color: var(--a3); }
+
+  /* Labor */
+  .lab {
+      position: absolute; top: 0; right: 0; bottom: 122px; width: 430px; z-index: 5;
+      background: rgba(8,6,14,0.93); border-left: 1px solid var(--line);
+      padding: 26px 28px; overflow-y: auto;
+      transform: translateX(100%); transition: transform .45s cubic-bezier(.3,.8,.3,1);
+  }
+  .lab.on { transform: translateX(0); }
+  .lab h3 { font-size: 10px; letter-spacing: 0.3em; font-weight: 400; color: var(--a2); margin: 22px 0 10px; }
+  .lab h3:first-of-type { margin-top: 16px; }
+  .swRow { display: flex; align-items: center; gap: 10px; font-size: 11px; margin-bottom: 6px; }
+  .sw { width: 26px; height: 26px; border-radius: 3px; flex-shrink: 0; }
+  .mono { font-family: 'Jost', monospace; font-variant-numeric: tabular-nums; }
+  .badge { font-size: 9px; letter-spacing: 0.12em; padding: 2px 7px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+
+  <div class="veil" id="veil"></div>
+  <div class="scrim" id="scrim"></div>
+  <svg class="grain" aria-hidden="true">
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3"></feTurbulence></filter>
+    <rect width="100%" height="100%" filter="url(#grain)"></rect>
+  </svg>
+
+  <div class="stage">
+
+    <!-- Timer -->
+    <div class="timerPane">
+      <div class="eyebrow">SITZUNG DREI VON VIER</div>
+      <div class="cg" id="headline" style="font-size: 46px; font-weight: 300; margin-top: 8px; line-height: 1.05;"></div>
+
+      <div style="display: flex; align-items: center; gap: 30px; margin-top: 24px;">
+        <div style="position: relative; width: 340px; height: 340px; flex-shrink: 0;">
+          <svg width="340" height="340" viewBox="0 0 340 340" aria-hidden="true">
+            <defs>
+              <linearGradient id="arc" x1="0" y1="1" x2="1" y2="0">
+                <stop id="g0" offset="0%"></stop>
+                <stop id="g1" offset="45%"></stop>
+                <stop id="g2" offset="100%"></stop>
+              </linearGradient>
+            </defs>
+            <circle cx="170" cy="170" r="163" fill="none" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 7"></circle>
+            <circle cx="170" cy="170" r="150" fill="none" stroke="var(--line)" stroke-width="10"></circle>
+            <circle cx="170" cy="170" r="150" fill="none" stroke="url(#arc)" stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="942.5" stroke-dashoffset="30" transform="rotate(-90 170 170)"></circle>
+            <circle id="sketch" cx="170" cy="170" r="137" fill="none" stroke-width="1.5"
+                    stroke-dasharray="118 640" transform="rotate(-64 170 170)"></circle>
+            <circle id="knob" cx="140" cy="23" r="6"></circle>
+            <circle id="knobGlow" cx="140" cy="23" r="13"></circle>
+          </svg>
+          <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="cg" style="font-size: 92px; font-weight: 300; line-height: 0.9; letter-spacing: -0.03em;">24:13</div>
+            <div class="hand" style="font-size: 22px; color: var(--muted); margin-top: 8px;">von 25 Minuten</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 22px;">
+          <div><div class="label">ENDE</div><div class="cg" style="font-size: 30px; font-weight: 300;">14:31</div></div>
+          <div><div class="label">PRESET</div><div class="cg" style="font-size: 22px; font-weight: 300;">25 / 5 / 15</div></div>
+          <div>
+            <div class="label">TAGESZIEL</div>
+            <div id="dots" style="display: flex; flex-wrap: wrap; gap: 8px; width: 92px; margin-top: 9px;"></div>
+            <div class="label" style="margin-top: 9px;">4 VON 8</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 11px; margin-top: 30px;">
+        <button class="btn primary">PAUSIEREN</button>
+        <button class="btn ghost">STÖRUNG</button>
+        <button class="btn quiet">VERWERFEN</button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 16px; margin-top: 26px;">
+        <div style="width: 40px; height: 1px; background: var(--a3); transition: background-color .5s ease;"></div>
+        <div class="hand" id="quote" style="font-size: 21px; color: var(--a3); transition: color .5s ease;"></div>
+      </div>
+    </div>
+
+    <!-- Statistik -->
+    <div class="statsPane">
+
+      <div>
+        <div class="hand" style="font-size: 21px; color: var(--a3); transition: color .5s ease;">Woran arbeitest du?</div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
+          <canvas id="curThumb" width="320" height="200" style="width: 64px; height: 40px; border-radius: 3px; flex-shrink: 0;"></canvas>
+          <div style="min-width: 0;">
+            <div class="cg" id="curName" style="font-size: 20px; line-height: 1.15;"></div>
+            <div id="curSub" style="font-size: 11px; color: var(--muted); margin-top: 2px;"></div>
+          </div>
+        </div>
+        <div id="palStrip" style="display: flex; gap: 3px; margin-top: 12px; height: 5px;"></div>
+        <div style="display: flex; gap: 18px; margin-top: 12px;">
+          <button class="textbtn" style="color: var(--a2);">BILD ERSETZEN</button>
+          <button class="textbtn" style="color: var(--a3);">NEU</button>
+          <button class="textbtn" style="color: var(--warn);">LÖSCHEN</button>
+        </div>
+      </div>
+
+      <div class="rule"></div>
+      <div id="kpis" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 18px;"></div>
+      <div class="rule"></div>
+
+      <div>
+        <div class="label" style="color: var(--a1);">FOKUS NACH TAGESZEIT</div>
+        <div id="hours" style="display: flex; align-items: flex-end; gap: 3px; height: 84px; margin-top: 12px;"></div>
+        <div class="hand" style="font-size: 20px; color: var(--a2); margin-top: 10px; transition: color .5s ease;">dein bestes Fenster: 15 – 17 Uhr</div>
+      </div>
+
+      <div class="rule"></div>
+
+      <div>
+        <div class="label">SECHS MONATE ARBEIT</div>
+        <div id="heat" style="display: grid; grid-template-rows: repeat(7, 11px); grid-auto-flow: column; gap: 3px; margin-top: 12px;"></div>
+      </div>
+    </div>
+
+    <!-- Labor -->
+    <div class="lab" id="lab">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <div class="cg" style="font-size: 24px;">Palette-Labor</div>
+        <button class="textbtn" id="labClose" style="color: var(--muted);">SCHLIESSEN</button>
+      </div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5;">
+        Kein Vorrat an Paletten — die Werte unten werden beim Laden aus den Pixeln des Bildes gerechnet.
+      </div>
+
+      <h3>QUELLE</h3>
+      <canvas id="labArt" width="320" height="200" style="width: 100%; border-radius: 3px;"></canvas>
+      <div id="labWarn" style="font-size: 11px; line-height: 1.5; margin-top: 10px; display: none;"></div>
+
+      <h3>CLUSTER · K-MEANS IN OKLAB</h3>
+      <div id="labClusters"></div>
+
+      <h3>ROLLEN</h3>
+      <div id="labRoles"></div>
+
+      <h3>KONTRAST · WCAG</h3>
+      <div id="labContrast"></div>
+
+      <h3>SCHRIFT</h3>
+      <div id="labFont" style="font-size: 11px; line-height: 1.6; color: var(--muted);"></div>
+    </div>
+  </div>
+
+  <!-- Filmstreifen -->
+  <div class="strip">
+    <div class="label" style="writing-mode: vertical-rl; transform: rotate(180deg); height: 74px; font-size: 9px;">PROJEKT</div>
+    <div id="chips" style="display: flex; gap: 12px;"></div>
+    <div style="flex-grow: 1;"></div>
+    <div style="display: flex; gap: 10px;">
+      <button class="toggle" id="tVeil">BILD ALS SCHLEIER</button>
+      <button class="toggle" id="tLab">PALETTE-LABOR</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ================================================================
+       1 · Farbmathematik  (OKLab/OKLCH, sRGB, WCAG-Kontrast)
+       Wird später 1:1 zu static/js/pomodoro_palette.js
+       ================================================================ */
+
+    function srgbToLin(c) { return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+    function linToSrgb(c) { return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055; }
+
+    function rgbToOklab(r, g, b) {
+        var lr = srgbToLin(r / 255), lg = srgbToLin(g / 255), lb = srgbToLin(b / 255);
+        var l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+        var m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+        var s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+        return {
+            L: 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+            a: 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+            b: 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+        };
+    }
+
+    function oklabToRgb(L, a, b) {
+        var l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+        var m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+        var s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+        var l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_;
+        return [
+            linToSrgb(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+            linToSrgb(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+            linToSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s)
+        ];
+    }
+
+    function inGamut(c) { return c[0] >= -0.001 && c[0] <= 1.001 && c[1] >= -0.001 && c[1] <= 1.001 && c[2] >= -0.001 && c[2] <= 1.001; }
+
+    /* OKLCH → Hex. Liegt die Farbe außerhalb von sRGB, wird die Sättigung
+       gesenkt bis sie passt — Helligkeit und Farbton bleiben, weil die
+       beiden die Lesbarkeit tragen. */
+    function lchToHex(L, C, h) {
+        var rad = h * Math.PI / 180, c = C, rgb;
+        for (var i = 0; i < 40; i++) {
+            rgb = oklabToRgb(L, Math.cos(rad) * c, Math.sin(rad) * c);
+            if (inGamut(rgb)) { break; }
+            c -= 0.005;
+            if (c < 0) { c = 0; }
+        }
+        var out = '#';
+        for (var j = 0; j < 3; j++) {
+            var v = Math.round(Math.max(0, Math.min(1, rgb[j])) * 255).toString(16);
+            out += v.length < 2 ? '0' + v : v;
+        }
+        return out;
+    }
+
+    function lchToRgb255(L, C, h) {
+        var hex = lchToHex(L, C, h);
+        return [parseInt(hex.substr(1, 2), 16), parseInt(hex.substr(3, 2), 16), parseInt(hex.substr(5, 2), 16)];
+    }
+
+    function relLum(rgb) {
+        return 0.2126 * srgbToLin(rgb[0] / 255) + 0.7152 * srgbToLin(rgb[1] / 255) + 0.0722 * srgbToLin(rgb[2] / 255);
+    }
+
+    function contrast(rgbA, rgbB) {
+        var a = relLum(rgbA), b = relLum(rgbB);
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    }
+
+    /* Hebt die Helligkeit einer Farbe so weit an, bis der Kontrast zum
+       Grund das Ziel erreicht. Das ist die Stelle, die garantiert, dass
+       auch ein schlecht gewähltes Bild eine benutzbare Oberfläche ergibt. */
+    function ensure(lch, bgRgb, target) {
+        var L = lch[0];
+        for (var i = 0; i < 90; i++) {
+            if (contrast(lchToRgb255(L, lch[1], lch[2]), bgRgb) >= target) { break; }
+            L += 0.01;
+            if (L > 0.99) { L = 0.99; break; }
+        }
+        return [L, lch[1], lch[2]];
+    }
+
+    function hueDist(a, b) { var d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; }
+
+    /* Gelb und Gelbgrün sind bei mittlerer Helligkeit schmutzig — dieselbe
+       Zahl für L ergibt je nach Farbton eine ganz andere gefühlte Helligkeit.
+       Deshalb bekommt jeder Farbton eine eigene Untergrenze. */
+    function liftForHue(L, h) {
+        h = ((h % 360) + 360) % 360;
+        var floorL = 0.74;
+        if (h >= 80 && h <= 140) { floorL = 0.87; }
+        else if ((h >= 55 && h < 80) || (h > 140 && h <= 170)) { floorL = 0.80; }
+        return Math.max(L, floorL);
+    }
+
+    /* ================================================================
+       2 · Das Bild.  Im Produkt liegt hier eine Datei des Nutzers;
+       fürs Mockup wird sie gezeichnet, damit die Datei ohne Internet
+       und ohne Assets funktioniert.
+       ================================================================ */
+
+    function paintArt(cv, art) {
+        var g = cv.getContext('2d'), w = cv.width, h = cv.height, i;
+        var sky = g.createLinearGradient(0, 0, 0, h);
+        sky.addColorStop(0, art.sky[0]);
+        sky.addColorStop(0.55, art.sky[1]);
+        sky.addColorStop(1, art.sky[2]);
+        g.fillStyle = sky;
+        g.fillRect(0, 0, w, h);
+
+        var sx = w * art.sunX, sy = h * art.horizon - 26;
+        var glow = g.createRadialGradient(sx, sy, 4, sx, sy, w * 0.42);
+        glow.addColorStop(0, art.sun);
+        glow.addColorStop(0.18, art.sun);
+        glow.addColorStop(1, 'rgba(0,0,0,0)');
+        g.globalAlpha = 0.55; g.fillStyle = glow; g.fillRect(0, 0, w, h); g.globalAlpha = 1;
+
+        g.beginPath(); g.arc(sx, sy, w * 0.062, 0, Math.PI * 2);
+        g.fillStyle = art.sun; g.fill();
+
+        g.beginPath();
+        g.moveTo(0, h * art.horizon + 20);
+        for (i = 0; i <= 8; i++) {
+            g.lineTo(w * i / 8, h * art.horizon - (((i * 37) % 11) * 4) + 12);
+        }
+        g.lineTo(w, h); g.lineTo(0, h); g.closePath();
+        g.fillStyle = art.ground; g.fill();
+
+        g.globalAlpha = 0.5;
+        for (i = 0; i < 3; i++) {
+            var bx = w * (0.2 + i * 0.3), by = h * (0.18 + (i % 2) * 0.12), br = w * (0.1 + (i % 3) * 0.05);
+            var bl = g.createRadialGradient(bx, by, 0, bx, by, br);
+            bl.addColorStop(0, art.dots); bl.addColorStop(1, 'rgba(0,0,0,0)');
+            g.fillStyle = bl; g.fillRect(0, 0, w, h);
+        }
+        g.globalAlpha = 1;
+
+        g.fillStyle = art.dots;
+        for (i = 0; i < 110; i++) {
+            g.globalAlpha = 0.08 + ((i % 7) * 0.035);
+            g.fillRect((i * 97) % w, (i * 53) % Math.round(h * art.horizon), 1.6, 1.6);
+        }
+        g.globalAlpha = 1;
+    }
+
+    /* ================================================================
+       3 · Extraktion:  k-Means über die Pixel, gerechnet in OKLab,
+       damit „ähnliche Farbe" das heißt, was das Auge dafür hält.
+       ================================================================ */
+
+    /* Normierung vor dem Clustern. Die Größe gehört zum Verfahren:
+       skaliert man anders herunter, mittelt man kleine bunte Flächen
+       (hier: die Sonne) weg und bekommt eine andere Leitfarbe.
+       Dasselbe Bild muss immer dieselbe Palette ergeben. */
+    var SAMPLE_W = 160, SAMPLE_H = 100;
+
+    function sampleImage(cv) {
+        var small = document.createElement('canvas');
+        small.width = SAMPLE_W; small.height = SAMPLE_H;
+        small.getContext('2d').drawImage(cv, 0, 0, SAMPLE_W, SAMPLE_H);
+        return small.getContext('2d').getImageData(0, 0, SAMPLE_W, SAMPLE_H).data;
+    }
+
+    function kmeans(px, k, iters) {
+        var pts = [], i, j;
+        for (i = 0; i < px.length; i += 4) {
+            pts.push(rgbToOklab(px[i], px[i + 1], px[i + 2]));
+        }
+        pts.sort(function (a, b) { return a.L - b.L; });
+
+        var cent = [];
+        for (i = 0; i < k; i++) {
+            var p = pts[Math.floor(pts.length * (i + 0.5) / k)];
+            cent.push({ L: p.L, a: p.a + (i % 2 ? 0.01 : -0.01), b: p.b });
+        }
+
+        var assign = new Array(pts.length);
+        for (var it = 0; it < iters; it++) {
+            for (i = 0; i < pts.length; i++) {
+                var best = 0, bd = 1e9;
+                for (j = 0; j < k; j++) {
+                    var dL = pts[i].L - cent[j].L, da = pts[i].a - cent[j].a, db = pts[i].b - cent[j].b;
+                    var d = dL * dL + da * da + db * db;
+                    if (d < bd) { bd = d; best = j; }
+                }
+                assign[i] = best;
+            }
+            var sum = [];
+            for (j = 0; j < k; j++) { sum.push({ L: 0, a: 0, b: 0, n: 0 }); }
+            for (i = 0; i < pts.length; i++) {
+                var s = sum[assign[i]];
+                s.L += pts[i].L; s.a += pts[i].a; s.b += pts[i].b; s.n++;
+            }
+            for (j = 0; j < k; j++) {
+                if (sum[j].n > 0) {
+                    cent[j] = { L: sum[j].L / sum[j].n, a: sum[j].a / sum[j].n, b: sum[j].b / sum[j].n };
+                }
+            }
+        }
+
+        var counts = [];
+        for (j = 0; j < k; j++) { counts.push(0); }
+        for (i = 0; i < pts.length; i++) { counts[assign[i]]++; }
+
+        var out = [];
+        for (j = 0; j < k; j++) {
+            if (counts[j] === 0) { continue; }
+            var C = Math.sqrt(cent[j].a * cent[j].a + cent[j].b * cent[j].b);
+            var hh = Math.atan2(cent[j].b, cent[j].a) * 180 / Math.PI;
+            if (hh < 0) { hh += 360; }
+            out.push({ L: cent[j].L, C: C, h: hh, w: counts[j] / pts.length });
+        }
+        out.sort(function (a, b) { return b.w - a.w; });
+        return out;
+    }
+
+    /* ================================================================
+       4 · Ableitung:  aus den Clustern werden neun Rollen.
+       Kernregel — aus dem Bild kommt fast nur der FARBTON.
+       Helligkeit und Sättigung setzt das Thema, sonst wird die
+       Oberfläche mal unlesbar dunkel und mal grell.
+       ================================================================ */
+
+    var LOW_CHROMA = 0.035;
+
+    function derive(cl) {
+        var i, s, best, score, meta = { lowChroma: false };
+
+        best = cl[0]; score = -1;
+        for (i = 0; i < cl.length; i++) {
+            s = cl[i].w * (1 - cl[i].L);
+            if (s > score) { score = s; best = cl[i]; }
+        }
+        var bgSeed = best;
+
+        /* Leitfarbe: Buntheit zählt mehr als Fläche — sonst gewinnt immer
+           der große ruhige Himmel und nie die Farbe, die das Bild ausmacht.
+           Tiefe Schatten und fast weiße Lichter scheiden aus, beide geben
+           matschige Akzente. */
+        best = null; score = -1;
+        for (i = 0; i < cl.length; i++) {
+            if (cl[i].L < 0.30 || cl[i].L > 0.95) { continue; }
+            s = Math.pow(cl[i].w, 0.22) * Math.pow(cl[i].C, 1.25) * (0.4 + cl[i].L);
+            if (s > score) { score = s; best = cl[i]; }
+        }
+        if (!best) { best = cl[0]; }
+        var accSeed = best;
+        if (accSeed.C < LOW_CHROMA) { meta.lowChroma = true; }
+
+        /* Gegenfarbe: bevorzugt ein zweiter Farbton aus dem Bild, sonst der
+           Abstand aus dem Thema. 135° statt 180° — die harte Komplementäre
+           wirkt immer billig. */
+        var altH = accSeed.h + 135, far = 0;
+        for (i = 0; i < cl.length; i++) {
+            var d = hueDist(cl[i].h, accSeed.h);
+            if (cl[i].C > LOW_CHROMA && cl[i].L > 0.25 && d > far && d >= 55) { far = d; altH = cl[i].h; }
+        }
+
+        var bgH = bgSeed.h, bgC = Math.min(bgSeed.C, 0.045);
+        var bg = [0.155, bgC, bgH];
+        var bgRgb = lchToRgb255(bg[0], bg[1], bg[2]);
+
+        var accC = Math.max(Math.min(accSeed.C, 0.17), 0.115);
+        var roles = {
+            bg:      bg,
+            surface: [0.205, bgC * 0.9, bgH],
+            ink:     ensure([0.945, Math.min(bgC, 0.022), bgH], bgRgb, 7),
+            muted:   ensure([0.70, Math.min(bgC, 0.022), bgH], bgRgb, 4.5),
+            a1:      ensure([liftForHue(0.76, accSeed.h), accC, accSeed.h], bgRgb, 4.5),
+            a2:      ensure([liftForHue(0.82, accSeed.h + 28), accC * 0.95, accSeed.h + 28], bgRgb, 4.5),
+            a3:      ensure([liftForHue(0.79, altH), 0.125, altH], bgRgb, 4.5),
+            a4:      ensure([liftForHue(0.72, accSeed.h - 85), 0.135, accSeed.h - 85], bgRgb, 4.5),
+            warn:    ensure([0.70, 0.16, 18], bgRgb, 4.5)
+        };
+
+        meta.contrast = [
+            ['Schrift auf Grund', contrast(lchToRgb255(roles.ink[0], roles.ink[1], roles.ink[2]), bgRgb), 7],
+            ['Gedämpft auf Grund', contrast(lchToRgb255(roles.muted[0], roles.muted[1], roles.muted[2]), bgRgb), 4.5],
+            ['Leitfarbe auf Grund', contrast(lchToRgb255(roles.a1[0], roles.a1[1], roles.a1[2]), bgRgb), 4.5]
+        ];
+        meta.accHue = accSeed.h;
+        meta.accChroma = accSeed.C;
+
+        /* Schrift aus Farbe: eine erfundene Zuordnung, keine Information
+           aus dem Bild. Steht hier, damit man sieht, wie wenig sie trägt. */
+        if (meta.lowChroma) { meta.font = 'Playfair Display'; meta.fontWhy = 'farbarmes Bild → strenge Renaissance-Antiqua'; }
+        else if (accSeed.h < 100 || accSeed.h > 330) { meta.font = 'Cormorant Garamond'; meta.fontWhy = 'warmer Farbton → zarte Garalde'; }
+        else { meta.font = 'Spectral'; meta.fontWhy = 'kühler Farbton → kräftigere Serife'; }
+
+        var hex = {};
+        for (var key in roles) {
+            if (roles.hasOwnProperty(key)) { hex[key] = lchToHex(roles[key][0], roles[key][1], roles[key][2]); }
+        }
+        return { lch: roles, hex: hex, meta: meta, clusters: cl };
+    }
+
+    function mixHex(h1, h2, t) {
+        function p(h) { return [parseInt(h.substr(1, 2), 16), parseInt(h.substr(3, 2), 16), parseInt(h.substr(5, 2), 16)]; }
+        var a = rgbToOklab.apply(null, p(h1)), b = rgbToOklab.apply(null, p(h2));
+        var L = a.L + (b.L - a.L) * t, aa = a.a + (b.a - a.a) * t, bb = a.b + (b.b - a.b) * t;
+        var C = Math.sqrt(aa * aa + bb * bb), hh = Math.atan2(bb, aa) * 180 / Math.PI;
+        return lchToHex(L, C, hh);
+    }
+
+    /* ================================================================
+       5 · Projekte
+       ================================================================ */
+
+    var PROJECTS = [
+        { id: 'rocketz', name: 'Rocketz Flying in the Wind', sub: 'Issue #42 · Water flow switch',
+          head: 'Tiefe Konzentration', quote: 'Vier Stück heute — der Nachmittag gehört dir.',
+          art: { sky: ['#2A1246', '#7A2E5C', '#E0623A'], sun: '#FFC46B', ground: '#180C22', dots: '#FF9A5C', horizon: 0.62, sunX: 0.68 } },
+        { id: 'lumina', name: 'Lumina-Schwarm', sub: 'Issue #77 · Schwarmlogik',
+          head: 'Kalte Klarheit', quote: 'Der Schwarm sortiert sich. Bleib dran.',
+          art: { sky: ['#03151F', '#084152', '#17B39B'], sun: '#A8FBEA', ground: '#020E16', dots: '#57D9F2', horizon: 0.70, sunX: 0.32 } },
+        { id: 'lorebook', name: 'Lorebook: Die Tiefe', sub: 'Kapitel 4 · Das Wrack',
+          head: 'Langes Lesen', quote: 'Noch zwei Seiten, dann Licht aus.',
+          art: { sky: ['#14060E', '#4A0E2A', '#8E2049'], sun: '#E0608F', ground: '#100309', dots: '#C03E6E', horizon: 0.55, sunX: 0.5 } },
+        { id: 'tools', name: 'GameDevTools', sub: 'Pomodoro-Modul',
+          head: 'Werkzeugbau', quote: 'Erst das Werkzeug, dann das Spiel.',
+          art: { sky: ['#04120A', '#0A3A22', '#1FA35C'], sun: '#A6FFC0', ground: '#020A06', dots: '#3BE07A', horizon: 0.68, sunX: 0.74 } },
+        { id: 'admin', name: 'Steuer & Ablage', sub: 'Quartal 3',
+          head: 'Nötige Pflicht', quote: 'Eine Stunde, dann ist Ruhe damit.',
+          art: { sky: ['#232220', '#3A3833', '#6E6A60'], sun: '#9B968A', ground: '#1A1917', dots: '#807C72', horizon: 0.60, sunX: 0.42 } }
+    ];
+
+    var HOURS = [2, 1, 0, 0, 0, 0, 3, 9, 22, 41, 58, 63, 38, 29, 52, 71, 66, 48, 31, 24, 18, 11, 7, 4];
+    var KPIS = [['1 h 45', 'FOKUS HEUTE', 'ink'], ['87 %', 'ABSCHLUSSQUOTE', 'a3'],
+                ['6', 'TAGE IN FOLGE', 'a2'], ['1,2', 'Ø STÖRUNGEN', 'warn']];
+
+    /* ================================================================
+       6 · Anwenden
+       ================================================================ */
+
+    var frame = document.getElementById('frame');
+    var current = null;
+
+    function applyPalette(p, proj) {
+        var f = frame.style, hex = p.hex, i;
+        f.setProperty('--bg', hex.bg);
+        f.setProperty('--surface', hex.surface);
+        f.setProperty('--ink', hex.ink);
+        f.setProperty('--muted', mixHex(hex.bg, hex.ink, 0.62));
+        f.setProperty('--line', mixHex(hex.bg, hex.ink, 0.16));
+        f.setProperty('--a1', hex.a1);
+        f.setProperty('--a2', hex.a2);
+        f.setProperty('--a3', hex.a3);
+        f.setProperty('--a4', hex.a4);
+        f.setProperty('--warn', hex.warn);
+        f.setProperty('--display', "'" + p.meta.font + "'");
+
+        document.getElementById('g0').setAttribute('stop-color', hex.a4);
+        document.getElementById('g1').setAttribute('stop-color', hex.a1);
+        document.getElementById('g2').setAttribute('stop-color', hex.a2);
+        document.getElementById('sketch').setAttribute('stroke', mixHex(hex.bg, hex.a3, 0.55));
+        document.getElementById('knob').setAttribute('fill', hex.a2);
+        document.getElementById('knobGlow').setAttribute('fill', mixHex(hex.bg, hex.a2, 0.35));
+
+        document.getElementById('headline').innerHTML =
+            proj.head.split(' ')[0] + ' <span style="font-style: italic; background: linear-gradient(94deg, ' +
+            hex.a1 + ', ' + hex.a2 + ' 55%, ' + hex.a4 + '); -webkit-background-clip: text; background-clip: text; color: transparent;">' +
+            proj.head.split(' ').slice(1).join(' ') + '</span>';
+        document.getElementById('quote').textContent = proj.quote;
+        document.getElementById('curName').textContent = proj.name;
+        document.getElementById('curSub').textContent = proj.sub;
+
+        var strip = document.getElementById('palStrip');
+        strip.innerHTML = '';
+        var order = ['bg', 'surface', 'a4', 'a1', 'a2', 'a3', 'warn'];
+        for (i = 0; i < order.length; i++) {
+            var sw = document.createElement('div');
+            sw.style.cssText = 'flex-grow: 1; border-radius: 1px; background: ' + hex[order[i]] + ';';
+            strip.appendChild(sw);
+        }
+
+        var dots = document.getElementById('dots');
+        dots.innerHTML = '';
+        for (i = 0; i < 8; i++) {
+            var d = document.createElement('div');
+            d.style.cssText = 'width: 11px; height: 11px; border-radius: 50%; ' +
+                (i < 4 ? 'background: linear-gradient(120deg, ' + hex.a1 + ', ' + hex.a2 + ');'
+                       : 'background: transparent; border: 1px solid ' + mixHex(hex.bg, hex.ink, 0.3) + ';');
+            dots.appendChild(d);
+        }
+
+        var kpiBox = document.getElementById('kpis');
+        kpiBox.innerHTML = '';
+        for (i = 0; i < KPIS.length; i++) {
+            var k = document.createElement('div');
+            k.innerHTML = '<div class="cg" style="font-size: 36px; font-weight: 300; line-height: 1; color: ' +
+                hex[KPIS[i][2]] + ';">' + KPIS[i][0] + '</div>' +
+                '<div class="label" style="margin-top: 7px;">' + KPIS[i][1] + '</div>';
+            kpiBox.appendChild(k);
+        }
+
+        var hourBox = document.getElementById('hours');
+        hourBox.innerHTML = '';
+        for (i = 0; i < HOURS.length; i++) {
+            var v = HOURS[i];
+            var bar = document.createElement('div');
+            bar.style.cssText = 'flex-grow: 1; border-radius: 3px 3px 0 0; height: ' + (Math.round((v / 71) * 80) + 4) + 'px; background: ' +
+                (v > 45 ? 'linear-gradient(180deg, ' + hex.a2 + ', ' + hex.a1 + ')'
+                        : (v > 20 ? mixHex(hex.bg, hex.a4, 0.85) : mixHex(hex.bg, hex.ink, 0.18))) + ';';
+            hourBox.appendChild(bar);
+        }
+
+        var ramp = [mixHex(hex.bg, hex.ink, 0.1), mixHex(hex.bg, hex.a3, 0.5),
+                    mixHex(hex.bg, hex.a4, 0.75), mixHex(hex.bg, hex.a1, 0.9), hex.a2];
+        var heat = document.getElementById('heat');
+        heat.innerHTML = '';
+        for (i = 0; i < 126; i++) {
+            var c = document.createElement('div');
+            c.style.cssText = 'width: 11px; height: 11px; border-radius: 2px; background: ' +
+                ramp[(i * 5 + (i % 6) * 2 + (i % 13)) % 5] + ';';
+            heat.appendChild(c);
+        }
+
+        var thumb = document.getElementById('curThumb');
+        thumb.getContext('2d').drawImage(proj.canvas, 0, 0, 320, 200);
+        document.getElementById('labArt').getContext('2d').drawImage(proj.canvas, 0, 0, 320, 200);
+        document.getElementById('veil').style.backgroundImage = 'url(' + proj.canvas.toDataURL() + ')';
+
+        renderLab(p);
+    }
+
+    function renderLab(p) {
+        var i, row, cl = p.clusters, hex = p.hex;
+
+        var warnBox = document.getElementById('labWarn');
+        if (p.meta.lowChroma) {
+            warnBox.style.display = 'block';
+            warnBox.style.color = hex.warn;
+            warnBox.textContent = 'Bild ist farbarm (max. Buntheit ' + p.meta.accChroma.toFixed(3) +
+                '). Der Farbton wurde übernommen, die Sättigung aber auf das Minimum der Oberfläche angehoben.';
+        } else {
+            warnBox.style.display = 'none';
+        }
+
+        var cb = document.getElementById('labClusters');
+        cb.innerHTML = '';
+        for (i = 0; i < cl.length; i++) {
+            row = document.createElement('div');
+            row.className = 'swRow';
+            row.innerHTML = '<div class="sw" style="background: ' + lchToHex(cl[i].L, cl[i].C, cl[i].h) + ';"></div>' +
+                '<div class="mono" style="width: 46px; color: ' + hex.ink + ';">' + Math.round(cl[i].w * 100) + ' %</div>' +
+                '<div class="mono" style="color: ' + hex.muted + ';">L ' + cl[i].L.toFixed(2) +
+                ' · C ' + cl[i].C.toFixed(3) + ' · H ' + Math.round(cl[i].h) + '°</div>';
+            cb.appendChild(row);
+        }
+
+        var names = [['bg', 'Grund'], ['surface', 'Fläche'], ['ink', 'Schrift'], ['muted', 'Gedämpft'],
+                     ['a1', 'Leitfarbe'], ['a2', 'Begleiter'], ['a3', 'Gegenfarbe'], ['a4', 'Dritte'], ['warn', 'Warnung · fix']];
+        var rb = document.getElementById('labRoles');
+        rb.innerHTML = '';
+        for (i = 0; i < names.length; i++) {
+            row = document.createElement('div');
+            row.className = 'swRow';
+            row.innerHTML = '<div class="sw" style="background: ' + hex[names[i][0]] + '; border: 1px solid rgba(255,255,255,0.12);"></div>' +
+                '<div style="width: 106px; color: ' + hex.ink + ';">' + names[i][1] + '</div>' +
+                '<div class="mono" style="color: ' + hex.muted + ';">' + hex[names[i][0]].toUpperCase() + '</div>';
+            rb.appendChild(row);
+        }
+
+        var kb = document.getElementById('labContrast');
+        kb.innerHTML = '';
+        for (i = 0; i < p.meta.contrast.length; i++) {
+            var c = p.meta.contrast[i], ok = c[1] >= c[2];
+            row = document.createElement('div');
+            row.className = 'swRow';
+            row.innerHTML = '<div style="width: 150px; color: ' + hex.ink + ';">' + c[0] + '</div>' +
+                '<div class="mono" style="width: 58px; color: ' + hex.muted + ';">' + c[1].toFixed(1) + ':1</div>' +
+                '<div class="badge" style="background: ' + (ok ? hex.a3 : hex.warn) + '; color: ' + hex.bg + ';">' +
+                (c[1] >= 7 ? 'AAA' : (ok ? 'AA' : 'ZU WENIG')) + '</div>';
+            kb.appendChild(row);
+        }
+
+        document.getElementById('labFont').innerHTML =
+            '<span style="color: ' + hex.ink + ';">' + p.meta.font + '</span> — ' + p.meta.fontWhy +
+            '<br><br>Diese Zuordnung ist erfunden: In den Pixeln steht keine Schrift. ' +
+            'Im Produkt besser eine Auswahl von Hand pro Projekt, Vorschlag als Startwert.';
+    }
+
+    /* ================================================================
+       7 · Aufbau
+       ================================================================ */
+
+    var chips = document.getElementById('chips'), i;
+
+    for (i = 0; i < PROJECTS.length; i++) {
+        (function (proj, idx) {
+            var cv = document.createElement('canvas');
+            cv.width = 320; cv.height = 200;
+            paintArt(cv, proj.art);
+            proj.canvas = cv;
+            proj.palette = derive(kmeans(sampleImage(cv), 6, 12));
+
+            var chip = document.createElement('div');
+            chip.className = 'chip' + (idx === 0 ? ' active' : '');
+            var vis = document.createElement('canvas');
+            vis.width = 320; vis.height = 200;
+            vis.getContext('2d').drawImage(cv, 0, 0);
+            chip.appendChild(vis);
+            var nm = document.createElement('div');
+            nm.className = 'nm';
+            nm.textContent = proj.name.length > 22 ? proj.name.substr(0, 20) + '…' : proj.name;
+            chip.appendChild(nm);
+            chip.onclick = function () {
+                var all = chips.getElementsByClassName('chip'), j;
+                for (j = 0; j < all.length; j++) { all[j].className = 'chip'; }
+                chip.className = 'chip active';
+                current = proj;
+                applyPalette(proj.palette, proj);
+            };
+            chips.appendChild(chip);
+        })(PROJECTS[i], i);
+    }
+
+    document.getElementById('tVeil').onclick = function () {
+        this.className = this.className === 'toggle' ? 'toggle on' : 'toggle';
+        var on = this.className.indexOf('on') > -1;
+        document.getElementById('veil').className = on ? 'veil on' : 'veil';
+        document.getElementById('scrim').className = on ? 'scrim on' : 'scrim';
+    };
+
+    function toggleLab(on) {
+        document.getElementById('lab').className = on ? 'lab on' : 'lab';
+        document.getElementById('tLab').className = on ? 'toggle on' : 'toggle';
+    }
+    document.getElementById('tLab').onclick = function () {
+        toggleLab(document.getElementById('lab').className.indexOf('on') === -1);
+    };
+    document.getElementById('labClose').onclick = function () { toggleLab(false); };
+
+    current = PROJECTS[0];
+    applyPalette(current.palette, current);
+})();
+</script>
+</body>
+</html>

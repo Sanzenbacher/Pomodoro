@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Timer{% endblock %}
+
+{% block content %}
+<div class="stage">
+
+  <!-- Timer -->
+  <div class="timer-pane">
+    <div class="eyebrow" id="phase-line">BEREIT</div>
+    <div class="cg headline" id="headline">Tiefe <em>Konzentration</em></div>
+
+    <div class="ring-row">
+      <div class="ring">
+        <svg width="340" height="340" viewBox="0 0 340 340" aria-hidden="true">
+          <defs>
+            <linearGradient id="arc" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0%" stop-color="var(--pomo-a4)"></stop>
+              <stop offset="45%" stop-color="var(--pomo-a1)"></stop>
+              <stop offset="100%" stop-color="var(--pomo-a2)"></stop>
+            </linearGradient>
+          </defs>
+          <circle cx="170" cy="170" r="163" fill="none" stroke="var(--pomo-line)"
+                  stroke-width="1" stroke-dasharray="2 7"></circle>
+          <circle cx="170" cy="170" r="150" fill="none" stroke="var(--pomo-line)"
+                  stroke-width="10"></circle>
+          {# Der Bogen zeigt die Restzeit: voll am Anfang, leer am Ende. #}
+          <circle id="arc-path" cx="170" cy="170" r="150" fill="none" stroke="url(#arc)"
+                  stroke-width="10" stroke-linecap="round" stroke-dasharray="942.5"
+                  stroke-dashoffset="942.5" transform="rotate(-90 170 170)"></circle>
+          <circle cx="170" cy="170" r="137" fill="none" stroke="var(--pomo-a3)"
+                  stroke-width="1.5" stroke-dasharray="118 640" opacity=".5"
+                  transform="rotate(-64 170 170)"></circle>
+          <circle id="arc-knob" cx="170" cy="20" r="6" fill="var(--pomo-a2)"></circle>
+          {#
+            Ueberzeit: Der Innenring bleibt als Schatten stehen (Plan erfuellt),
+            die Mehrzeit laeuft aussen auf der Bahn, die sonst nur Zierde ist.
+            Eine volle Runde = eine weitere Phasenlaenge.
+          #}
+          <g id="over-layer" hidden>
+            <line x1="170" y1="0" x2="170" y2="15" stroke="var(--pomo-ink)"
+                  stroke-width="1.5" opacity=".55"></line>
+            <circle id="over-arc" cx="170" cy="170" r="163" fill="none" stroke="var(--pomo-a2)"
+                    stroke-width="5" stroke-linecap="round" stroke-dasharray="0 1024.2"
+                    transform="rotate(-90 170 170)"></circle>
+            <circle id="over-glow" cx="170" cy="7" r="11" fill="var(--pomo-a2)" opacity=".18"></circle>
+            <circle id="over-knob" cx="170" cy="7" r="6" fill="var(--pomo-a2)"></circle>
+          </g>
+        </svg>
+        <div class="ring-face">
+          <div class="cg ring-time" id="clock">25:00</div>
+          <div class="hand ring-sub" id="clock-sub">von 25 Minuten</div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div>
+          <div class="label" id="ends-label">ENDE</div>
+          <div class="cg meta-value" id="ends-at">--:--</div>
+        </div>
+        <div>
+          <div class="label" style="display: flex; align-items: baseline; gap: 10px;">
+            PRESET
+            <a href="/pomodoro/settings" class="textbtn" style="letter-spacing: .12em;">ÄNDERN</a>
+          </div>
+          <select class="field cg" id="preset" style="font-size: 20px;">
+            {% for p in presets %}
+              <option value="{{ p.id }}"
+                      data-work="{{ p.work_min }}"
+                      data-short="{{ p.short_break_min }}"
+                      data-long="{{ p.long_break_min }}">{{ p.work_min }} / {{ p.short_break_min }} / {{ p.long_break_min }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <div class="label" style="display: flex; align-items: baseline; gap: 10px;">
+            TAGESZIEL
+            <a href="/pomodoro/settings" class="textbtn" style="letter-spacing: .12em;">ÄNDERN</a>
+          </div>
+          <div class="goal-dots" id="goal-dots">
+            {% for i in range(summary.goal) %}
+              <div class="{{ 'on' if i < summary.pomodoros_today }}"></div>
+            {% endfor %}
+          </div>
+          <div class="label" style="margin-top: 9px;">
+            <span id="goal-done">{{ summary.pomodoros_today }}</span> VON {{ summary.goal }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls" id="controls">
+      <button class="btn primary" data-act="start">POMODORO STARTEN</button>
+      <button class="btn ghost" data-act="interrupt" hidden>STÖRUNG</button>
+      <button class="btn quiet" data-act="abort" hidden>VERWERFEN</button>
+    </div>
+
+    <div class="quote-row">
+      <div class="dash"></div>
+      <div class="hand" id="quote">
+        {% if summary.pomodoros_today %}
+          {{ summary.pomodoros_today }} Stück heute — weiter so.
+        {% else %}
+          Noch nichts heute. Fang klein an.
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Projekt und Zahlen -->
+  <div class="stats-pane">
+    <div>
+      <div class="hand" style="font-size: 21px; color: var(--pomo-a3);">Woran arbeitest du?</div>
+      <div class="project-pick">
+        {{ project_icon(project, 44) }}
+        <select class="project-select cg" id="project">
+          {% for p in projects %}
+            <option value="{{ p.id }}" {{ 'selected' if project and p.id == project.id }}>{{ p.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if palette %}
+        <div class="pal-strip">
+          {% for role in ['bg', 'surface', 'a4', 'a1', 'a2', 'a3', 'warn'] %}
+            <div style="background: {{ palette[role] }}"></div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div style="display: flex; gap: 18px; margin-top: 12px;">
+        <a class="textbtn" href="/pomodoro/projects">BILD &amp; FARBEN</a>
+        <button class="textbtn alt" id="new-project">NEU</button>
+        <a class="textbtn danger" href="/pomodoro/projects">VERWALTEN</a>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="kpis">
+      <div>
+        <div class="cg kpi-value">{{ summary.focus_minutes_today }}</div>
+        <div class="label" style="margin-top: 7px;">FOKUSMINUTEN HEUTE</div>
+      </div>
+      <div>
+        <div class="cg kpi-value" style="color: var(--pomo-a3);">{{ summary.completion_rate }} %</div>
+        <div class="label" style="margin-top: 7px;">ABSCHLUSSQUOTE</div>
+      </div>
+      <div>
+        <div class="cg kpi-value" style="color: var(--pomo-a2);">{{ summary.streak }}</div>
+        <div class="label" style="margin-top: 7px;">TAGE IN FOLGE</div>
+      </div>
+      <div>
+        <div class="cg kpi-value" style="color: var(--pomo-warn);">{{ summary.avg_interruptions }}</div>
+        <div class="label" style="margin-top: 7px;">Ø STÖRUNGEN</div>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="chart-today">
+      <div class="label" style="color: var(--pomo-a1);">HEUTE · ALLE PROJEKTE</div>
+      <div style="margin-top: 12px;">{{ timeline_svg | safe }}</div>
+      <div class="note" style="margin-top: 8px;">
+        {% if today.pomodoros %}
+          {{ today.pomodoros }} Pomodoro{{ 's' if today.pomodoros != 1 }} · {{ today.minutes }} min
+          {%- if today.projects > 1 %} in {{ today.projects }} Projekten{% endif %}
+          · {% if today.avg_rating %}Ø Fokus {{ today.avg_rating }}{% else %}nicht bewertet{% endif %}
+          {%- if today.overtime %} · +{{ today.overtime }} min Überzeit{% endif %}
+          {%- if today.unrated %} · {{ today.unrated }} nicht bewertet{% endif %}
+        {% else %}
+          Heute noch nichts erledigt.
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="chart-weeks">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px;">
+        <div class="label">LETZTE 8 WOCHEN</div>
+        {% if this_week.delta_text %}
+          <div class="label" style="color: {{ 'var(--pomo-muted)' if this_week.delta_pct is none else ('var(--pomo-a3)' if this_week.delta_pct >= 0 else 'var(--pomo-warn)') }};"
+               title="{{ this_week.compare_minutes }} min diese Woche, {{ this_week.prev_minutes }} min in der Vorwoche">
+            {{ this_week.delta_text | upper }}
+          </div>
+        {% endif %}
+      </div>
+      <div style="margin-top: 12px;">{{ weekly_svg | safe }}</div>
+      {% if weekly_legend %}
+        <div class="legend" style="margin-top: 8px;">
+          {% for item in weekly_legend %}
+            <span><i style="background: {{ item.color }};"></i>{{ item.label | upper }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="chart-hours">
+      <div class="label" style="color: var(--pomo-a1);">FOKUS NACH TAGESZEIT</div>
+      <div style="margin-top: 12px;">{{ hours_svg | safe }}</div>
+      <div class="legend" style="margin-top: 8px;">
+        {% for item in rating_legend %}
+          <span><i style="background: {{ item.color }}; opacity: {{ item.opacity }};"></i>{{ item.label }}</span>
+        {% endfor %}
+      </div>
+      {% if best_window %}
+        <div class="hand" style="font-size: 20px; color: var(--pomo-a2); margin-top: 10px;">
+          dein bestes Fenster: {{ '%02d' % best_window.from }} – {{ '%02d' % best_window.to }} Uhr
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="chart-cal">
+      <div class="label">DIE LETZTEN MONATE</div>
+      <div style="margin-top: 12px;">{{ calendar_svg | safe }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pomodoro.js') }}"></script>
+{% endblock %}

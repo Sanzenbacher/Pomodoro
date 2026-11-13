@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pomodoro-Mockup — Landschaft je Monat</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap">
+<link rel="stylesheet" href="app.css">
+<style>
+  .stage { position: relative; margin-top: 22px; border: 1px solid var(--pomo-line); border-radius: 8px; overflow: hidden; background: #2a3a22; }
+  .stage canvas { display: block; width: 100%; height: 560px; cursor: grab; touch-action: none; }
+  .zoom { position: absolute; right: 14px; top: 14px; display: flex; gap: 6px; }
+  .zoom button { background: rgba(21,16,32,.78); border: 1px solid var(--pomo-line); color: var(--pomo-ink); min-width: 34px; height: 32px; border-radius: 4px; font-size: 13px; }
+  .badge { position: absolute; left: 14px; top: 14px; background: rgba(21,16,32,.78); border: 1px solid var(--pomo-line); border-radius: 999px; padding: 6px 14px; font-size: 10px; letter-spacing: .22em; color: var(--pomo-ink); }
+  .tools { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 18px; border-top: 1px solid var(--pomo-line); background: var(--pomo-surface); }
+  .tools input[type=range] { flex: 1; min-width: 160px; }
+  .tools .day { min-width: 120px; font-size: 20px; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+  .theme-box { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .explain { margin-top: 22px; }
+  .explain ul { margin: 10px 0 0 18px; font-size: 13.5px; line-height: 1.7; color: var(--pomo-ink); }
+  .explain li b { font-weight: 500; color: var(--pomo-a2); }
+  .gal-head { display: flex; justify-content: space-between; align-items: baseline; margin: 40px 0 14px; gap: 12px; flex-wrap: wrap; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .gcard { background: var(--pomo-surface); border: 1px solid var(--pomo-line); border-radius: 6px; overflow: hidden; cursor: pointer; text-align: left; padding: 0; transition: border-color .3s; }
+  .gcard:hover, .gcard.on { border-color: var(--pomo-a1); }
+  .gcard canvas { display: block; width: 100%; height: 150px; }
+  .gcard .meta { padding: 10px 14px 12px; }
+  .gcard .m { font-size: 22px; font-weight: 300; }
+  .gcard .s { font-size: 11px; color: var(--pomo-muted); margin-top: 3px; line-height: 1.45; }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <b>MOCKUP</b>
+  <label>Jahreszeit
+    <select id="m-season"><option value="">nach Monat</option><option value="spring">Frühling</option><option value="summer">Sommer</option><option value="autumn">Herbst</option><option value="winter">Winter</option></select>
+  </label>
+  <button id="m-reroll">Alle Landschaften neu würfeln</button>
+  <span>Landschaft je Monat ausgewürfelt. Daten sind Beispiele.</span>
+  <a href="../index.html">← Übersicht</a>
+</div>
+<div id="pomo-root">
+  <div class="veil"></div><div class="scrim"></div>
+  <header class="topbar">
+    <a class="wordmark" href="#"><span class="cg">GameDev</span><span class="atelier">ATELIER</span></a>
+    <nav>
+      <a href="13-hauptseite-hintergrund.html">TIMER</a><a href="#">JOURNAL</a><a href="12-biotop.html" class="on">BIOTOP</a>
+      <a href="#">STATISTIK</a><a href="#">PROJEKTE</a><a href="#">EINSTELLUNGEN</a>
+    </nav>
+    <div class="mini"><span class="l">FOKUS</span><span class="t cg">18:42</span></div>
+  </header>
+
+  <main class="wrap">
+    <div class="page-head">
+      <div>
+        <div class="eyebrow" id="eyebrow">BIOTOP · LANDSCHAFT</div>
+        <div class="cg page-title" id="title">November 2026</div>
+      </div>
+      <div class="theme-box">
+        <div class="label">THEMA</div>
+        <div class="seg" id="theme"><button data-t="garten">GARTEN</button><button data-t="wald">WALD</button></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <canvas id="world"></canvas>
+      <div class="badge" id="badge">WALD</div>
+      <div class="zoom"><button id="zo" title="Herauszoomen">−</button><button id="zr" title="Ansicht zurücksetzen">1×</button><button id="zi" title="Hineinzoomen">+</button></div>
+      <div class="tools">
+        <input type="range" id="day" min="1" max="30" step="1" value="30">
+        <div class="cg day" id="day-label">30. November</div>
+        <button class="btn small" id="reroll" title="Nur im Mockup: anderer Seed für diesen Monat">ANDERE LANDSCHAFT</button>
+        <label class="switch"><input type="checkbox" id="anim" checked> ANIMATIONEN</label>
+      </div>
+    </div>
+    <div class="tags" id="tags"></div>
+
+    <div class="gal-head">
+      <div><div class="eyebrow">VARIANTEN</div><div class="cg" style="font-size: 26px; font-weight: 300;">Was ausgewürfelt werden kann</div></div>
+      <div class="note-line">Je ein Beispiel, Stand am 10. des Monats, damit das Gelände zu sehen ist.</div>
+    </div>
+    <div class="gallery" id="g-show"></div>
+
+    <div class="card explain">
+      <h3>WAS SICH JEDEN MONAT ÄNDERT</h3>
+      <ul>
+        <li><b>Wald:</b> kein, ein, zwei oder drei Flüsse, manche mit Seitenarm (Gabelung) – oder ein See mit Zu- und Abfluss. Dazu flach, ein oder zwei Plateaus mit Felskante, eine Hügelkette oder ein Berg mit Schneekappe. Ein bis zwei Lichtungen (dort grast das Reh).</li>
+        <li><b>Wald-Pflanzen:</b> wachsen ab zwei bis vier Baumgruppen, die jeden Monat woanders liegen; auf Plateaus und an den Südhängen wachsen sie mit, auf Gipfel und Felskante nicht.</li>
+        <li><b>Garten:</b> offen, ein Zaun quer oder längs, ein T, eine eingezäunte Ecke oder ein Kreuz mit vier Bereichen; jeweils mit Tor und Trittsteinen. Statt Holzzaun manchmal eine Hecke. Ein Bereich kann eine Blumenwiese sein.</li>
+        <li><b>Teiche:</b> keiner, einer oder zwei – rund, lang, nierenförmig oder verzweigt, mit Steinrand, Schilf und Seerosen. Der Frosch sitzt am Ufer.</li>
+        <li><b>Beete:</b> liegen jeden Monat woanders und in anderer Reihenfolge; runde Beete, Hochbeete (wachsen Reihe für Reihe) oder gemischt.</li>
+        <li>Der Seed ist <i>Jahr + Monat + Thema</i>: Ein Monat sieht immer gleich aus, auch in der Galerie. Nichts davon wird gespeichert.</li>
+      </ul>
+    </div>
+
+    <div class="gal-head">
+      <div><div class="eyebrow">WALD</div><div class="cg" style="font-size: 26px; font-weight: 300;">Zwölf Monate, zwölf Landschaften</div></div>
+      <div class="note-line">Klick lädt den Monat oben.</div>
+    </div>
+    <div class="gallery" id="g-wald"></div>
+    <div class="gal-head">
+      <div><div class="eyebrow">GARTEN</div><div class="cg" style="font-size: 26px; font-weight: 300;">Zwölf Monate, zwölf Gärten</div></div>
+    </div>
+    <div class="gallery" id="g-garten"></div>
+  </main>
+</div>
+
+<script src="welt.js"></script>
+<script src="gelaende.js"></script>
+<script>
+(function () {
+  const B = Biotop, $ = id => document.getElementById(id);
+  let reroll = 0;
+  const data = {};
+  const monthData = (theme, month) => {
+    const k = theme + month;
+    if (!data[k]) { const days = new Date(2026, month, 0).getDate(); data[k] = { theme, month, days, entries: B.demo({ year: 2026, month, days, theme }) }; }
+    return data[k];
+  };
+  let cur = monthData('wald', 11);
+  const world = new B.TerrainWorld($('world'), { theme: cur.theme, year: 2026, month: cur.month, entries: cur.entries, day: cur.days, interactive: true, onChange: render });
+  world.onZoom = k => { $('zr').textContent = k.toFixed(1) + '×'; };
+
+  function render() {
+    $('title').textContent = B.MONTHS[world.month - 1] + ' 2026';
+    $('eyebrow').textContent = 'BIOTOP · ' + B.SEASON[world.season].name.toUpperCase();
+    $('badge').textContent = (world.theme === 'wald' ? 'WALD' : 'GARTEN') + (world.reroll ? ' · VARIANTE ' + (world.reroll + 1) : '');
+    $('day-label').textContent = world.day + '. ' + B.MONTHS[world.month - 1];
+    $('tags').innerHTML = world.terrainInfo().map(t => `<span class="pill ok">${t}</span>`).join('');
+    document.querySelectorAll('#theme button').forEach(b => b.classList.toggle('on', b.dataset.t === world.theme));
+    document.querySelectorAll('.gcard').forEach(g => g.classList.toggle('on', g.dataset.t === world.theme && +g.dataset.m === world.month));
+  }
+  function load(theme, month, rr, day) {
+    cur = monthData(theme, month);
+    world.year = 2026; world.month = month; world.theme = theme; world.reroll = rr == null ? reroll : rr;
+    world.seasonOverride = $('m-season').value || null;
+    world.setEntries(cur.entries, day || cur.days);
+    $('day').max = cur.days; $('day').value = day || cur.days;
+    world.resetView(); $('zr').textContent = '1×';
+    render();
+  }
+
+  $('theme').addEventListener('click', ev => { const t = ev.target.dataset.t; if (t) load(t, world.month); });
+  $('day').addEventListener('input', () => world.setDay(+$('day').value));
+  $('anim').addEventListener('change', () => world.setAnimate($('anim').checked));
+  $('reroll').onclick = () => { world.reroll++; world.A = []; world.layout(); world.syncAnimals(-10, false); world.changed(); };
+  $('zi').onclick = () => { $('zr').textContent = world.zoom(1.4).toFixed(1) + '×'; };
+  $('zo').onclick = () => { $('zr').textContent = world.zoom(1 / 1.4).toFixed(1) + '×'; };
+  $('zr').onclick = () => { world.resetView(); $('zr').textContent = '1×'; };
+
+  const thumbs = [];
+  function gallery() {
+    thumbs.length = 0;
+    ['wald', 'garten'].forEach(theme => {
+      const box = $('g-' + theme);
+      box.innerHTML = Array.from({ length: 12 }, (_, i) => `<button class="gcard" data-t="${theme}" data-m="${i + 1}"><canvas></canvas><div class="meta">
+        <div class="cg m">${B.MONTHS[i]}</div><div class="s"></div></div></button>`).join('');
+      box.querySelectorAll('.gcard').forEach(g => {
+        const m = monthData(theme, +g.dataset.m);
+        const w = new B.TerrainWorld(g.querySelector('canvas'), { theme, year: 2026, month: m.month, entries: m.entries, day: m.days, animate: false, camY: 430, k: 1.05, reroll,
+                                                                   season: $('m-season').value || null });
+        thumbs.push(w);
+        g.querySelector('.s').textContent = w.terrainInfo().join(' · ');
+        g.addEventListener('click', () => { load(theme, m.month); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+      });
+    });
+  }
+  $('m-season').addEventListener('change', () => { const v = $('m-season').value; world.setSeason(v); thumbs.forEach(w => w.setSeason(v)); render(); });
+  $('m-reroll').onclick = () => { reroll++; gallery(); load(world.theme, world.month); };
+
+  // Variantenschau: fuer jedes Merkmal den ersten passenden Seed suchen
+  const SHOW = [
+    ['wald', 'See mit Zu- und Abfluss', d => d[0].startsWith('See')],
+    ['wald', 'Berg mit Schneekappe', d => d.includes('Berg')],
+    ['wald', 'Plateaus', d => d.includes('2 Plateaus')],
+    ['wald', 'Hügelkette', d => d.some(x => x.endsWith('Hügel'))],
+    ['wald', 'Drei Flüsse', d => d[0].startsWith('3 Flüsse')],
+    ['wald', 'Gegabelter Fluss, flach', d => d[0] === 'Ein Fluss, gegabelt' && d.includes('flach')],
+    ['garten', 'Kreuz: vier Bereiche', d => d[0].includes('4 Bereiche') && d[0].startsWith('Zaun')],
+    ['garten', 'Hecke statt Zaun', d => d[0].startsWith('Hecke,') && !d.includes('kein Teich')],
+    ['garten', 'Eingezäunte Ecke mit Wiese', d => d[0].includes('Ecke') && d.includes('Blumenwiese')],
+    ['garten', 'Verzweigter Teich', d => d.includes('verzweigter Teich') && d[0].startsWith('offen')],
+    ['garten', 'Zwei Teiche, Niere und lang', d => d.includes('Nierenteich') && d.includes('langer Teich')],
+    ['garten', 'Nur Hochbeete', d => d.includes('Hochbeete') && d.includes('runder Teich')]
+  ];
+  function showcase() {
+    const box = $('g-show');
+    const picks = SHOW.map(([theme, label, ok]) => { for (let rr = 0; rr < 600; rr++) if (ok(B.terrainDesc(theme, 2026, 7, rr))) return { theme, label, rr }; return null; }).filter(Boolean);
+    box.innerHTML = picks.map((p, i) => `<button class="gcard" data-i="${i}"><canvas></canvas><div class="meta"><div class="cg m">${p.label}</div><div class="s"></div></div></button>`).join('');
+    box.querySelectorAll('.gcard').forEach(g => {
+      const p = picks[+g.dataset.i], m = monthData(p.theme, 7);
+      const w = new B.TerrainWorld(g.querySelector('canvas'), { theme: p.theme, year: 2026, month: 7, entries: m.entries, day: 10, animate: false, camY: 430, k: 1.05, reroll: p.rr });
+      g.querySelector('.s').textContent = (p.theme === 'wald' ? 'Wald · ' : 'Garten · ') + w.terrainInfo().join(' · ');
+      g.addEventListener('click', () => { load(p.theme, 7, p.rr, 10); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    });
+  }
+
+  $('day').max = cur.days; $('day').value = cur.days;
+  showcase(); gallery(); render();
+})();
+</script>
+</body>
+</html>

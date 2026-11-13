@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pomodoro-Mockup — Biotop</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap">
+<link rel="stylesheet" href="app.css">
+<style>
+  .stage { position: relative; margin-top: 22px; border: 1px solid var(--pomo-line); border-radius: 8px; overflow: hidden; background: #2a3a22; }
+  .stage canvas { display: block; width: 100%; height: 520px; cursor: grab; touch-action: none; }
+  .zoom { position: absolute; right: 14px; top: 14px; display: flex; gap: 6px; }
+  .zoom button { background: rgba(21,16,32,.78); border: 1px solid var(--pomo-line); color: var(--pomo-ink); min-width: 34px; height: 32px; border-radius: 4px; font-size: 13px; }
+  .badge { position: absolute; left: 14px; top: 14px; background: rgba(21,16,32,.78); border: 1px solid var(--pomo-line); border-radius: 999px; padding: 6px 14px; font-size: 10px; letter-spacing: .22em; color: var(--pomo-ink); }
+  .tools { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 18px; border-top: 1px solid var(--pomo-line); background: var(--pomo-surface); }
+  .tools input[type=range] { flex: 1; min-width: 160px; }
+  .tools .day { min-width: 120px; font-size: 20px; }
+  .kpis { margin-top: 18px; }
+  .lists { margin-top: 16px; }
+  .row { display: flex; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--pomo-line); }
+  .row:last-child { border-bottom: none; }
+  .row .grow { flex: 1; min-width: 0; }
+  .row .nm { font-size: 15px; }
+  .row .sub { font-size: 11.5px; color: var(--pomo-muted); margin-top: 1px; }
+  .row .n { font-size: 26px; font-weight: 300; min-width: 44px; text-align: right; }
+  .row.off { opacity: .55; }
+  .theme-box { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .note-line { font-size: 12px; color: var(--pomo-muted); }
+  .gal-head { display: flex; justify-content: space-between; align-items: baseline; margin: 40px 0 14px; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .gcard { background: var(--pomo-surface); border: 1px solid var(--pomo-line); border-radius: 6px; overflow: hidden; cursor: pointer; text-align: left; padding: 0; transition: border-color .3s; }
+  .gcard:hover, .gcard.on { border-color: var(--pomo-a1); }
+  .gcard canvas { display: block; width: 100%; height: 140px; }
+  .gcard .meta { padding: 10px 14px 12px; }
+  .gcard .m { font-size: 22px; font-weight: 300; }
+  .gcard .s { font-size: 11px; color: var(--pomo-muted); margin-top: 2px; letter-spacing: .04em; }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <b>MOCKUP</b>
+  <label>Jahreszeit-Vorschau
+    <select id="m-season"><option value="">automatisch (nach Monat)</option><option value="spring">Frühling</option><option value="summer">Sommer</option><option value="autumn">Herbst</option><option value="winter">Winter</option></select>
+  </label>
+  <span>Heute ist der 10. November 2026. Daten sind Beispiele.</span>
+  <a href="../index.html">← Übersicht</a>
+</div>
+<div id="pomo-root">
+  <div class="veil"></div><div class="scrim"></div>
+  <header class="topbar">
+    <a class="wordmark" href="#"><span class="cg">GameDev</span><span class="atelier">ATELIER</span></a>
+    <nav>
+      <a href="13-hauptseite-hintergrund.html">TIMER</a><a href="#">JOURNAL</a><a href="#" class="on">BIOTOP</a>
+      <a href="#">STATISTIK</a><a href="#">PROJEKTE</a><a href="#">EINSTELLUNGEN</a>
+    </nav>
+    <div class="mini"><span class="l">FOKUS</span><span class="t cg">18:42</span></div>
+  </header>
+
+  <main class="wrap">
+    <div class="page-head">
+      <div>
+        <div class="eyebrow" id="eyebrow">BIOTOP · HERBST</div>
+        <div class="cg page-title" id="title">November 2026</div>
+      </div>
+      <div class="theme-box">
+        <div class="label">THEMA DIESES MONATS</div>
+        <div class="seg" id="theme"><button data-t="garten">GARTEN</button><button data-t="wald">WALD</button></div>
+        <div class="note-line" id="theme-note">Jederzeit änderbar, solange der Monat läuft.</div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <canvas id="world"></canvas>
+      <div class="badge" id="badge">LÄUFT · TAG 10 VON 30</div>
+      <div class="zoom"><button id="zo" title="Herauszoomen">−</button><button id="zr" title="Ansicht zurücksetzen">1×</button><button id="zi" title="Hineinzoomen">+</button></div>
+      <div class="tools">
+        <button class="btn small" id="play">MONAT ABSPIELEN</button>
+        <input type="range" id="day" min="1" max="10" step="1" value="10">
+        <div class="cg day" id="day-label">10. November</div>
+        <label class="switch"><input type="checkbox" id="anim" checked> ANIMATIONEN</label>
+      </div>
+    </div>
+
+    <div class="grid k4 kpis">
+      <div class="card"><h3>PFLANZEN</h3><div class="cg big" id="k-plants">0</div><div class="note" id="k-plants-n">aus Arbeit und Journal</div></div>
+      <div class="card"><h3>TIERE</h3><div class="cg big" id="k-animals">0</div><div class="note" id="k-animals-n"></div></div>
+      <div class="card"><h3>PFLANZENSORTEN</h3><div class="cg big" id="k-kinds">0</div><div class="note">eine Sorte je Projekt oder Aktivität</div></div>
+      <div class="card"><h3>TIERARTEN</h3><div class="cg big" id="k-species">0 / 7</div><div class="note" id="k-species-n">tauchen auf, wenn genug wächst</div></div>
+    </div>
+
+    <div class="grid split lists">
+      <div class="card"><h3>PFLANZEN · EIN EINTRAG, EINE PFLANZE</h3><div id="plants" style="margin-top: 8px;"></div>
+        <div class="note" style="margin-top: 10px;">Welche Pflanze zu welchem Projekt gehört: <a href="14-pflanzen-zuordnung.html" style="color: var(--pomo-a2);">Pflanzen zuordnen</a></div></div>
+      <div class="card"><h3>TIERE · JE MEHR WÄCHST, DESTO MEHR KOMMEN</h3><div id="animals" style="margin-top: 8px;"></div></div>
+    </div>
+
+    <div class="gal-head">
+      <div><div class="eyebrow">GALERIE</div><div class="cg" style="font-size: 26px; font-weight: 300;">Vergangene Monate</div></div>
+      <div class="note-line">Abgeschlossene Monate bleiben, wie sie gewachsen sind.</div>
+    </div>
+    <div class="gallery" id="gallery"></div>
+  </main>
+</div>
+
+<script src="welt.js"></script>
+<script>
+(function () {
+  const B = Biotop;
+  const TODAY = { year: 2026, month: 11, day: 10 };
+  // Monate mit Beispieldaten. Im Juli war Gitarre noch der Mohn zugeordnet,
+  // ab August der Fliegenpilz: Die Galerie zeigt den Juli trotzdem mit Mohn.
+  const MONTHS = [
+    { year: 2026, month: 11, theme: 'wald', current: true },
+    { year: 2026, month: 10, theme: 'wald' },
+    { year: 2026, month: 9, theme: 'garten' },
+    { year: 2026, month: 8, theme: 'wald' },
+    { year: 2026, month: 7, theme: 'garten' },
+    { year: 2026, month: 6, theme: 'garten', garten: { 'a:gitarre': 'fliegenpilz', 'p:admin': 'farn' } },
+    { year: 2026, month: 5, theme: 'wald', wald: { 'p:masterarbeit': 'ahorn', 'a:spazieren': 'fingerhut' } },
+    { year: 2026, month: 2, theme: 'wald', wald: { 'p:brettspiel': 'kiefer' } }
+  ];
+  MONTHS.forEach(m => {
+    m.days = m.current ? TODAY.day : new Date(m.year, m.month, 0).getDate();
+    m.entries = B.demo({ year: m.year, month: m.month, days: m.days, theme: m.theme, garten: m.garten, wald: m.wald });
+  });
+
+  const $ = id => document.getElementById(id);
+  let cur = MONTHS[0];
+  const world = new B.World($('world'), { theme: cur.theme, year: cur.year, month: cur.month, entries: cur.entries, day: cur.days,
+                                          interactive: true, labels: true, onChange: render });
+  world.onZoom = k => { $('zr').textContent = k.toFixed(1) + '×'; };
+
+  const SRC = Object.fromEntries(B.TARGETS.map(t => [t.key, t]));
+  function render() {
+    const inf = world.info(), season = world.season;
+    $('eyebrow').textContent = 'BIOTOP · ' + inf.seasonName.toUpperCase();
+    $('title').textContent = B.MONTHS[world.month - 1] + ' ' + world.year;
+    $('day-label').textContent = world.day + '. ' + B.MONTHS[world.month - 1];
+    const len = new Date(world.year, world.month, 0).getDate();
+    $('badge').textContent = cur.current ? `LÄUFT · TAG ${TODAY.day} VON ${len}` : 'ABGESCHLOSSEN · ' + (cur.theme === 'garten' ? 'GARTEN' : 'WALD');
+    $('k-plants').textContent = inf.total;
+    $('k-plants-n').textContent = world.theme === 'wald' ? `${inf.trees} Bäume, ${inf.total - inf.trees} im Unterholz` : 'aus Arbeit und Journal';
+    $('k-animals').textContent = inf.animalsTotal;
+    const sleeping = inf.animals.filter(a => a.sleeping).reduce((s, a) => s + a.n, 0);
+    $('k-animals-n').textContent = sleeping ? `davon ${sleeping} im Winterschlaf` : 'laufen gerade herum';
+    $('k-kinds').textContent = inf.kinds;
+    $('k-species').textContent = inf.species + ' / 7';
+
+    const srcOf = id => [...new Set(world.visible().filter(e => e.plant === id).map(e => e.src))].map(k => SRC[k]);
+    $('plants').innerHTML = inf.plants.length ? inf.plants.map(p => {
+      const s = srcOf(p.id);
+      return `<div class="row"><canvas class="icon" data-plant="${p.id}"></canvas><div class="grow"><div class="nm cg">${p.name}</div>
+        <div class="sub">${s.map(x => x.name + ' · ' + x.kind).join(', ')}</div></div><div class="cg n">${p.n}</div></div>`;
+    }).join('') : '<div class="note" style="padding: 14px 0;">Noch nichts gewachsen. Die erste fertige Arbeitsphase pflanzt etwas.</div>';
+    $('animals').innerHTML = inf.animals.map(a => `<div class="row ${a.n ? '' : 'off'}"><canvas class="icon" data-animal="${a.id}"></canvas>
+      <div class="grow"><div class="nm cg">${a.name} ${a.sleeping ? '<span class="pill warm">WINTERSCHLAF</span>' : ''}</div>
+      <div class="sub">${a.rule}</div><div class="prog"><i style="width:${Math.round(a.p * 100)}%"></i></div>
+      <div class="sub">${a.n ? a.txt : 'noch nicht da · ' + a.txt}</div></div><div class="cg n">${a.n || ''}</div></div>`).join('');
+    document.querySelectorAll('[data-plant]').forEach(cv => B.drawPlantIcon(cv, cv.dataset.plant, season));
+    document.querySelectorAll('[data-animal]').forEach(cv => B.drawAnimalIcon(cv, cv.dataset.animal));
+
+    document.querySelectorAll('#theme button').forEach(b => b.classList.toggle('on', b.dataset.t === world.theme));
+    $('theme').classList.toggle('locked', !cur.current);
+    $('theme-note').textContent = cur.current ? 'Jederzeit änderbar, solange der Monat läuft.' : 'Abgeschlossen. Das Thema bleibt.';
+    document.querySelectorAll('.gcard').forEach(g => g.classList.toggle('on', +g.dataset.i === MONTHS.indexOf(cur)));
+  }
+
+  function load(m) {
+    stop(); cur = m;
+    world.year = m.year; world.month = m.month; world.theme = m.theme;
+    world.seasonOverride = $('m-season').value || null;
+    world.setEntries(m.entries, m.days);
+    $('day').max = m.days; $('day').value = m.days;
+    world.resetView(); $('zr').textContent = '1×';
+    render();
+  }
+
+  $('theme').addEventListener('click', ev => {
+    const t = ev.target.dataset.t; if (!t || !cur.current) return;
+    cur.theme = t; cur.entries.forEach(e => e.plant = e.alt[t]);
+    world.setTheme(t); thumbs[0].setTheme(t); render();
+  });
+  $('day').addEventListener('input', () => world.setDay(+$('day').value));
+  $('anim').addEventListener('change', () => world.setAnimate($('anim').checked));
+  $('zi').onclick = () => { $('zr').textContent = world.zoom(1.4).toFixed(1) + '×'; };
+  $('zo').onclick = () => { $('zr').textContent = world.zoom(1 / 1.4).toFixed(1) + '×'; };
+  $('zr').onclick = () => { world.resetView(); $('zr').textContent = '1×'; };
+  $('m-season').addEventListener('change', () => { world.setSeason($('m-season').value); render(); });
+
+  let timer = null;
+  function stop() { if (timer) { clearInterval(timer); timer = null; $('play').textContent = 'MONAT ABSPIELEN'; } }
+  $('play').onclick = () => {
+    if (timer) return stop();
+    let d = 1; world.setDay(d); $('day').value = d; $('play').textContent = 'ANHALTEN';
+    timer = setInterval(() => { if (d >= cur.days) return stop(); d++; $('day').value = d; world.setDay(d); }, 420);
+  };
+
+  const thumbs = [];
+  $('gallery').innerHTML = MONTHS.map((m, i) => `<button class="gcard" data-i="${i}"><canvas></canvas><div class="meta">
+    <div class="cg m">${B.MONTHS[m.month - 1]}${m.year !== 2026 ? ' ' + m.year : ''}</div><div class="s" id="gs${i}"></div></div></button>`).join('');
+  document.querySelectorAll('.gcard').forEach(g => {
+    const m = MONTHS[+g.dataset.i];
+    const w = new B.World(g.querySelector('canvas'), { theme: m.theme, year: m.year, month: m.month, entries: m.entries, day: m.days, animate: false, camY: 430, k: 1.05 });
+    thumbs.push(w);
+    const inf = w.info();
+    document.getElementById('gs' + g.dataset.i).textContent = (m.current ? 'LÄUFT · ' : '') + (m.theme === 'garten' ? 'Garten' : 'Wald') + ' · ' + inf.seasonName + ' · ' + inf.total + ' Pflanzen · ' + inf.animalsTotal + ' Tiere';
+    g.addEventListener('click', () => { load(m); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

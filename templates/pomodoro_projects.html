@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Projekte & Aktivitäten{% endblock %}
+
+{% block content %}
+<div class="proj-layout">
+
+  <!-- Liste: Projekte und Aktivitaeten sind eine Liste von Kategorien
+       (KONZEPT-PROJEKTE-AKTIVITAETEN.md). Der Umschalter filtert nur. -->
+  <div class="proj-list" id="proj-list" data-filter="{{ filter }}">
+    <div class="proj-filter" role="tablist">
+      {% for key, name in [('all', 'Alle'), ('timer', 'Timer'), ('journal', 'Journal')] %}
+        <a role="tab" class="{{ 'on' if filter == key }}" aria-selected="{{ 'true' if filter == key else 'false' }}"
+           href="?filter={{ key }}{% if project %}&project={{ project.id }}{% endif %}">{{ name }} <span class="mono">{{ filter_counts[key] }}</span></a>
+      {% endfor %}
+    </div>
+    <div style="padding: 14px 22px 18px; display: flex; gap: 10px; align-items: center;">
+      <input class="field" id="new-label" style="flex-grow: 1;"
+             placeholder="{{ 'Neue Aktivität …' if filter == 'journal' else ('Neues Projekt …' if filter == 'timer' else 'Neues Projekt oder Aktivität …') }}">
+      <button class="btn small primary" id="new-go">ANLEGEN</button>
+    </div>
+    {% for p in categories %}
+      <div class="proj-row {{ 'on' if project and p.id == project.id }}" data-id="{{ p.id }}">
+        {{ project_icon(p, 48) }}
+        <div style="flex-grow: 1; min-width: 0;">
+          <div class="nm">{{ p.label }}</div>
+          <div class="pal-strip" style="width: 132px; height: 4px;">
+            {% for role in ['bg', 'a4', 'a1', 'a2', 'a3'] %}
+              <div style="background: {{ p.palette[role] }}"></div>
+            {% endfor %}
+          </div>
+          <div class="use-tags">
+            {% if p.use_timer %}<span class="use-tag">TIMER</span>{% endif %}
+            {% if p.use_journal %}<span class="use-tag journal">JOURNAL</span>{% endif %}
+          </div>
+        </div>
+        <div style="flex-shrink: 0; text-align: right;">
+          <div class="badge" style="border: 1px solid {{ 'var(--pomo-a2)' if p.palette_locked else 'var(--pomo-line)' }};
+                                    color: {{ 'var(--pomo-a2)' if p.palette_locked else 'var(--pomo-muted)' }};">
+            {{ 'FIX' if p.palette_locked else 'AUTO' }}
+          </div>
+          <div class="label" style="margin-top: 6px;" title="Sitzungen · Journal-Einträge">
+            {%- if p.sessions or (not p.entries and p.use_timer) %}{{ p.sessions }} SITZ.{% endif %}
+            {%- if not p.sessions and not p.entries and not p.use_timer %}0 EINTR.{% endif %}
+            {%- if p.sessions and p.entries %} · {% endif %}
+            {%- if p.entries %}{{ p.entries }} EINTR.{% endif %}
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="note" style="padding: 6px 22px 18px;">Hier steht noch nichts.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Detail -->
+  <div class="proj-detail" id="detail" data-id="{{ project.id if project }}"
+       data-default="{{ 1 if project and project.is_default else 0 }}">
+    {% if not project %}
+      <div class="hand" style="font-size: 22px;">Noch nichts ausgewählt.</div>
+    {% else %}
+
+    <!-- Wo die Kategorie zur Auswahl steht, und was sie im Biotop pflanzt. -->
+    <div class="card proj-use">
+      <div>
+        <div class="label">VERWENDUNG</div>
+        <div class="use-switches" style="margin-top: 10px;">
+          <label class="use-switch">
+            <input type="checkbox" id="use-timer" aria-label="Im Timer anbieten" {{ 'checked' if project.use_timer }}
+                   {{ 'disabled' if project.is_default or (project.use_timer and not project.use_journal) }}>
+            <span><b>Im Timer</b> anbieten<br><span class="note">Zählt als Fokuszeit, wenn du damit arbeitest.</span></span>
+          </label>
+          <label class="use-switch">
+            <input type="checkbox" id="use-journal" aria-label="Im Journal anbieten" {{ 'checked' if project.use_journal }}
+                   {{ 'disabled' if project.use_journal and not project.use_timer }}>
+            <span><b>Im Journal</b> anbieten<br><span class="note">Für Nachgetragenes neben dem Timer, zählt nicht als Fokuszeit.</span></span>
+          </label>
+        </div>
+        <div class="note" style="font-size: 10.5px; margin-top: 8px;">
+          {{ project.sessions }} Sitzung{{ 'en' if project.sessions != 1 }} · {{ project.entries }} Journal-Eintr{{ 'äge' if project.entries != 1 else 'ag' }}.
+          Eins von beiden bleibt an — zum Ausblenden löschen bzw. archivieren.
+        </div>
+      </div>
+      {% if plants %}
+        <div>
+          <div class="label">IM BIOTOP</div>
+          <div class="proj-plants" id="proj-plants" style="margin-top: 10px;"
+               data-garten="{{ plants.garten }}" data-wald="{{ plants.wald }}"></div>
+          <div class="note" style="font-size: 10.5px; margin-top: 8px;">
+            Gilt ab jetzt, Gewachsenes bleibt. <a class="textbtn" href="/pomodoro/biotop#bio-map">ALLE ZUORDNUNGEN</a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div style="display: flex; gap: 22px; align-items: flex-start;">
+
+      <div style="width: 330px; flex-shrink: 0;">
+        <div class="label">ICON</div>
+        <div class="icon-grid" id="icon-grid" style="margin-top: 9px;">
+          <button type="button" class="icon-pick {{ 'on' if not project.icon_set }}" data-icon="" title="Automatisch aus dem Namen">
+            <span class="auto">AUTO</span>
+          </button>
+          <button type="button" class="icon-pick {{ 'on' if project.icon_set == 'letter' }}" data-icon="letter" title="Monogramm">
+            {{ icon_svg(None, project.label, project.palette, 34) }}
+          </button>
+          {% for key, item in ICONS.items() %}
+            <button type="button" class="icon-pick {{ 'on' if project.icon_set == key }}" data-icon="{{ key }}" title="{{ item[0] }}">
+              {{ icon_svg(key, item[0], project.palette, 34) }}
+            </button>
+          {% endfor %}
+        </div>
+
+        <div class="label" style="margin-top: 18px;">BILD</div>
+        <div class="drop {{ '' if project.has_image else 'empty' }}" id="drop" style="margin-top: 9px;">
+          {% if project.has_image %}
+            <img id="art" src="{{ url_for('pomodoro.media', name=project.image) }}" alt="">
+          {% endif %}
+          <div class="hint">
+            <div>BILD HIERHER ZIEHEN</div>
+            <div style="letter-spacing: .1em; opacity: .7;">PNG · JPG · WEBP · bis 8 MB</div>
+          </div>
+          <input type="file" id="file" accept="image/png,image/jpeg,image/webp" hidden>
+        </div>
+        <div class="note" id="fileline" style="font-size: 10.5px; color: var(--pomo-muted); margin-top: 8px;">
+          {% if project.has_image %}{{ project.image }}{% else %}Kein Bild — die Farben kommen aus der Leitfarbe.{% endif %}
+        </div>
+
+        <div class="label" style="margin-top: 18px;">LEITFARBE OHNE BILD</div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+          <input type="color" id="color" value="{{ project.color or '#FF9679' }}"
+                 style="width: 46px; height: 30px; background: none; border: 1px solid var(--pomo-line); border-radius: 4px;">
+          <input class="field" id="label" value="{{ project.label }}" style="flex-grow: 1;">
+        </div>
+
+        <div class="label" style="margin-top: 18px;">FARBE IN DER STATISTIK</div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+          <input type="color" id="stats-color" value="{{ project.stats_color or project.stats_color_auto }}"
+                 data-auto="{{ project.stats_color_auto }}"
+                 style="width: 46px; height: 30px; background: none; border: 1px solid var(--pomo-line); border-radius: 4px;">
+          <label class="note" style="margin: 0; display: flex; gap: 7px; align-items: center; cursor: pointer;">
+            <input type="checkbox" id="stats-auto" {{ 'checked' if not project.stats_color }}>
+            automatisch
+          </label>
+        </div>
+        <div class="note" style="font-size: 10.5px; margin-top: 6px;">
+          Automatisch: nah an der Leitfarbe, aber mit deutlichem Abstand zu allen anderen Projekten.
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; min-width: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <div class="label">ROLLEN</div>
+          <div class="label" style="letter-spacing: .04em;">Schloss = bleibt beim Neurechnen stehen</div>
+        </div>
+        <div id="roles" style="margin-top: 8px;"></div>
+
+        <div class="label" style="margin-top: 14px;">KONTRAST</div>
+        <div id="contrast" style="margin-top: 8px;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap;">
+        <div style="width: 200px;">
+          <div class="label">FARBTON DREHEN <span id="hue-val" class="mono" style="color: var(--pomo-a2);"></span></div>
+          <input type="range" id="hue" min="-60" max="60" value="{{ project.hue_shift }}" style="margin-top: 11px;">
+          <div class="note">Gegen Projekte, die einander zu ähnlich sehen.</div>
+        </div>
+        <div style="width: 200px;">
+          <div class="label">SÄTTIGUNG <span id="chr-val" class="mono" style="color: var(--pomo-a2);"></span></div>
+          <input type="range" id="chr" min="60" max="150" value="{{ (project.chroma_scale * 100) | round | int }}" style="margin-top: 11px;">
+          <div class="note">Wirkt nur auf die Akzente, nie auf Grund und Schrift.</div>
+        </div>
+        <div style="flex-grow: 1; min-width: 220px;">
+          <div class="label">SCHRIFT</div>
+          <select class="field" id="font">
+            <option value="">Vorschlag aus dem Bild ({{ project.font }})</option>
+            {% for f in ['Cormorant Garamond', 'Playfair Display', 'Spectral'] %}
+              <option value="{{ f }}" {{ 'selected' if project.display_font == f }}>{{ f }}</option>
+            {% endfor %}
+          </select>
+          <div class="note">In den Pixeln steht keine Schrift — der Vorschlag ist geraten, die Auswahl zählt.</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button class="btn small" id="save">SPEICHERN</button>
+          <button class="btn small" id="reset">ZURÜCKSETZEN</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 16px; align-items: stretch; flex-wrap: wrap;">
+      <div class="card" style="flex-grow: 1; min-width: 380px;">
+        <div class="label">SO SIEHT DER TIMER AUS</div>
+        <div style="display: flex; align-items: center; gap: 22px; margin-top: 14px;">
+          <div style="position: relative; width: 104px; height: 104px; flex-shrink: 0;">
+            <svg width="104" height="104" viewBox="0 0 104 104" aria-hidden="true">
+              <defs><linearGradient id="pv" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0%" stop-color="var(--pomo-a4)"></stop>
+                <stop offset="50%" stop-color="var(--pomo-a1)"></stop>
+                <stop offset="100%" stop-color="var(--pomo-a2)"></stop>
+              </linearGradient></defs>
+              <circle cx="52" cy="52" r="44" fill="none" stroke="var(--pomo-line)" stroke-width="5"></circle>
+              <circle cx="52" cy="52" r="44" fill="none" stroke="url(#pv)" stroke-width="5"
+                      stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="9"
+                      transform="rotate(-90 52 52)"></circle>
+            </svg>
+            <div class="cg" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 27px; font-weight: 300;">24:13</div>
+          </div>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div class="cg" id="pv-name" style="font-size: 20px; font-weight: 300;">{{ project.label }}</div>
+            <div class="hand" style="font-size: 17px; color: var(--pomo-a3); margin-top: 2px;">so wirkt es beim Arbeiten</div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-shrink: 0;">
+            <button class="btn small primary">PAUSIEREN</button>
+            <button class="btn small">STÖRUNG</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="width: 280px; flex-shrink: 0;">
+        <div class="label">ZUSTAND</div>
+        <div id="state-box" style="font-size: 11.5px; line-height: 1.85; margin-top: 11px;"></div>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+          <button class="btn small" id="lock">{{ 'WIEDER AUTOMATISCH' if project.palette_locked else 'FARBEN FESTHALTEN' }}</button>
+          <button class="btn small danger" id="rm-image" {{ 'disabled' if not project.has_image }}>BILD ENTFERNEN</button>
+          <button class="btn small danger" id="rm-project">{{ 'AKTIVITÄT' if not project.use_timer else 'PROJEKT' }} LÖSCHEN</button>
+        </div>
+      </div>
+    </div>
+
+    {% if collisions %}
+      <div class="card" style="border-color: var(--pomo-warn);">
+        <div class="label" style="color: var(--pomo-warn);">ZU ÄHNLICH</div>
+        <div class="note" style="margin-top: 8px;">
+          {% for c in collisions %}
+            {{ c.a }} und {{ c.b }} liegen im Farbton weniger als 25° auseinander.
+          {% endfor %}
+          Dreh bei einem von beiden den Farbton, sonst sind sie im Betrieb nicht zu unterscheiden.
+        </div>
+      </div>
+    {% endif %}
+
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pomodoro_palette.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pomodoro_projects.js') }}"></script>
+{% endblock %}

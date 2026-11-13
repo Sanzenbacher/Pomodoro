@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Pomodoro-Mockups — Übersicht</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: #0a0a0f;
+      color: #c8d6e5;
+      padding: 48px 40px 80px;
+      line-height: 1.6;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+  h2 { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; margin-top: 44px; }
+  .sub { color: #6b7d8f; font-size: 15px; margin-top: 6px; }
+  .note {
+      margin-top: 22px; padding: 14px 16px;
+      background: #12121a; border: 1px solid #1e2a3a; border-radius: 8px;
+      font-size: 14px; color: #8fa3b5;
+  }
+  .list { margin-top: 28px; display: flex; flex-direction: column; gap: 10px; }
+  a.card {
+      display: grid; grid-template-columns: 44px 1fr; gap: 16px; align-items: center;
+      padding: 16px 18px;
+      background: #12121a; border: 1px solid #1e2a3a; border-radius: 8px;
+      text-decoration: none; color: inherit;
+  }
+  a.card:hover { background: #1a1a28; border-color: #00e5c8; }
+  .num { font-family: 'JetBrains Mono', monospace; font-size: 20px; color: #00e5c8; }
+  .name { font-size: 17px; font-weight: 500; }
+  .desc { font-size: 13.5px; color: #6b7d8f; margin-top: 2px; }
+  footer { margin-top: 36px; font-size: 13.5px; color: #4a5568; }
+  footer a { color: #00e5c8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pomodoro — dieselbe Oberfläche in acht Themen</h1>
+  <p class="sub">Gestaltungsvarianten zum Konzept in <code>docs/pomodoro/KONZEPT.md</code></p>
+
+  <div class="note">
+    Alle acht zeigen denselben Funktionsumfang: Timer mit Phase und Zyklus, Projektauswahl
+    mit Anlegen / Bearbeiten / Löschen, Preset- und Issue-Verknüpfung, Tagesziel,
+    Störungs-Button und die Statistik (Fokus heute, Abschlussquote, Streak, Heatmap,
+    Tageszeit-Histogramm). So unterscheidet sich wirklich nur die Gestaltung.
+    Die Zahlen sind Platzhalter.
+  </div>
+
+  <div class="list">
+    <a class="card" href="01-sehr-verspielt.html">
+      <div class="num">01</div>
+      <div>
+        <div class="name">Sehr verspielt</div>
+        <div class="desc">Creme, 4-px-Outlines, harte Offset-Schatten, Maskottchen, Fredoka, Tagesziel als XP-Leiste</div>
+      </div>
+    </a>
+    <a class="card" href="02-verspielt.html">
+      <div class="num">02</div>
+      <div>
+        <div class="name">Verspielt</div>
+        <div class="desc">Helles Lavendel, weiche Karten, Quicksand, ruhige Pastelltöne</div>
+      </div>
+    </a>
+    <a class="card" href="03-ernsthaft.html">
+      <div class="num">03</div>
+      <div>
+        <div class="name">Ernsthaft</div>
+        <div class="desc">Hell, Haarlinien, IBM Plex Mono für Zahlen, die Sitzungstabelle dominiert</div>
+      </div>
+    </a>
+    <a class="card" href="04-software-entwicklung.html">
+      <div class="num">04</div>
+      <div>
+        <div class="name">Software-Entwicklung</div>
+        <div class="desc">Vorhandene Bioluminescent-Palette, Editor-Tableiste, Event-Log, Statusbar</div>
+      </div>
+    </a>
+    <a class="card" href="05-matrix.html">
+      <div class="num">05</div>
+      <div>
+        <div class="name">Matrix</div>
+        <div class="desc">Schwarz, Phosphorgrün, Zeichenregen, Scanlines, VT323-Ziffern</div>
+      </div>
+    </a>
+    <a class="card" href="06-sexy.html">
+      <div class="num">06</div>
+      <div>
+        <div class="name">Sexy</div>
+        <div class="desc">Wein und Gold, asymmetrischer Split, Playfair Display, viel Luft</div>
+      </div>
+    </a>
+    <a class="card" href="07-kuenstlerisch.html">
+      <div class="num">07</div>
+      <div>
+        <div class="name">Künstlerisch</div>
+        <div class="desc">Papierton, rotierte Karten mit Klebestreifen, skizzierter Ring, Caveat-Randnotizen</div>
+      </div>
+    </a>
+    <a class="card" href="08-sinnlich-kuenstlerisch.html">
+      <div class="num">08</div>
+      <div>
+        <div class="name">Sinnlich &amp; Künstlerisch</div>
+        <div class="desc">Mischung aus 06 und 07: Aubergine-Nacht mit Koralle, Amber, Jade und Flieder, Verlaufsring mit skizzierten Bögen, Cormorant-Ziffern, Caveat-Randnotizen</div>
+      </div>
+    </a>
+  </div>
+
+  <h2>Ausbau von 08: Farben aus dem Projektbild</h2>
+  <p class="sub">Konzept dazu in <code>KONZEPT-PROJEKTFARBEN.md</code></p>
+  <div class="note">
+    Diese beiden sind anklickbar und rechnen wirklich: Die Paletten sind nicht hinterlegt,
+    sondern werden beim Laden aus den Pixeln des jeweiligen Projektbildes gewonnen
+    (k-Means in OKLab, Rollenzuteilung, Kontrastgarantie). Die Bilder selbst sind
+    gezeichnet, damit die Dateien ohne Internet und ohne Assets funktionieren.
+  </div>
+
+  <div class="list">
+    <a class="card" href="09-projektfarben.html">
+      <div class="num">09</div>
+      <div>
+        <div class="name">Projektfarben am Timer</div>
+        <div class="desc">Fünf Projekte, Umschalter unten, Bild als Schleier zuschaltbar, „Palette-Labor" mit Clustern, Rollen und gemessenem Kontrast</div>
+      </div>
+    </a>
+    <a class="card" href="10-projektbilder-verwaltung.html">
+      <div class="num">10</div>
+      <div>
+        <div class="name">Projekte, Bilder, Paletten</div>
+        <div class="desc">Die Verwaltung: Bild hinterlegen, Palette prüfen, Farbton drehen, Sättigung regeln, Rollen sperren, Schrift wählen, Vorschau</div>
+      </div>
+    </a>
+  </div>
+
+  <h2>Ausbau von 08: Überzeit</h2>
+  <p class="sub">Konzept dazu in <code>KONZEPT.md</code>, Abschnitt 6</p>
+
+  <div class="list">
+    <a class="card" href="11-ueberzeit.html">
+      <div class="num">11</div>
+      <div>
+        <div class="name">Überzeit</div>
+        <div class="desc">Die Uhr zählt nach dem Ablauf weiter: Timerseite mit Außenbogen, die vier Zustände, drei Dialoge (Ablauf, Grund, Obergrenze), Mini-Timer, Tab-Titel, Einstellungen, Statistik</div>
+      </div>
+    </a>
+  </div>
+
+  <h2>Biotop: Garten und Wald</h2>
+  <p class="sub">Konzept dazu in <code>KONZEPT.md</code>, Abschnitt 13 · die Dateien liegen in <code>visualization/</code></p>
+
+  <div class="list">
+    <a class="card" href="visualization/12-biotop.html">
+      <div class="num">12</div>
+      <div>
+        <div class="name">Biotop-Seite</div>
+        <div class="desc">Jeder Eintrag pflanzt etwas, Tiere kommen dazu: Ansicht mit Zoom, Monat abspielen, Statistik, Thema Garten oder Wald je Monat, Jahreszeiten, Galerie vergangener Monate</div>
+      </div>
+    </a>
+    <a class="card" href="visualization/13-hauptseite-hintergrund.html">
+      <div class="num">13</div>
+      <div>
+        <div class="name">Biotop hinter der Timerseite</div>
+        <div class="desc">Drei Varianten (Vollbild, Horizont, Fenster), Projektschleier darüber, Animationen abschaltbar; Arbeitsphase abschließen lässt sofort etwas wachsen</div>
+      </div>
+    </a>
+    <a class="card" href="visualization/14-pflanzen-zuordnung.html">
+      <div class="num">14</div>
+      <div>
+        <div class="name">Pflanzen zuordnen</div>
+        <div class="desc">Eine Pflanze je Projekt und Aktivität, getrennt für Garten und Wald; eine Änderung gilt ab jetzt, Gewachsenes bleibt</div>
+      </div>
+    </a>
+    <a class="card" href="visualization/15-gelaende.html">
+      <div class="num">15</div>
+      <div>
+        <div class="name">Landschaft je Monat</div>
+        <div class="desc">Jeder Monat wird neu ausgewürfelt: Flüsse mit Gabelungen, Seen, Plateaus, Hügel und Berge im Wald; Zäune, Hecken, Teiche in verschiedenen Formen und neu verteilte Beete im Garten</div>
+      </div>
+    </a>
+  </div>
+
+  <footer>
+    Jede Datei ist eigenständig — Doppelklick genügt (die Biotop-Mockups laden <code>welt.js</code> und <code>app.css</code> aus ihrem Ordner). Die Schriften kommen von Google Fonts,
+    ohne Internet fällt die Darstellung auf Systemschriften zurück.
+    Canvas-Fassung zum Vergleichen: <a href="https://claude.ai/artifact/UukQdhBPJ3EpHro9MT6edC">claude.ai/artifact/UukQdhBPJ3EpHro9MT6edC</a>
+  </footer>
+</div>
+</body>
+</html>

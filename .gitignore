@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+
+# Persoenliche Daten (Sitzungen, Journal) gehoeren nicht ins Repository.
+storage/db/*.db
+storage/db/*.db-*
+
+# Mehrere Benutzer (KONZEPT-BENUTZER.md): je Benutzer ein Ordner
+storage/users.json
+storage/users.json.tmp
+storage/users/
+storage/geloescht/
+storage/vor-benutzern-*/

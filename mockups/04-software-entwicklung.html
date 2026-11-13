@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Pomodoro-Mockup — Software-Entwicklung</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Space Grotesk', sans-serif; background: #050508; display: flex; justify-content: center; padding: 24px; }
+  a { color: #00e5c8; }
+  .frame { width: 1280px; height: 860px; background: #0a0a0f; color: #c8d6e5; display: flex; overflow: hidden; border-radius: 6px; }
+  button { font-family: 'JetBrains Mono', monospace; cursor: pointer; }
+  .m { font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <!-- Main -->
+  <div style="flex-grow: 1; display: flex; flex-direction: column;">
+
+    <div class="m" style="height: 36px; background: #101018; border-bottom: 1px solid #1e2a3a; display: flex; align-items: stretch; font-size: 12px;">
+      <div style="padding: 0 16px; display: flex; align-items: center; background: #12121a; border-right: 1px solid #1e2a3a; border-top: 2px solid #00e5c8; color: #c8d6e5;">timer</div>
+      <div style="padding: 0 16px; display: flex; align-items: center; border-right: 1px solid #1e2a3a; color: #6b7d8f;">stats</div>
+      <div style="padding: 0 16px; display: flex; align-items: center; border-right: 1px solid #1e2a3a; color: #6b7d8f;">projects</div>
+      <div style="padding: 0 16px; display: flex; align-items: center; border-right: 1px solid #1e2a3a; color: #6b7d8f;">presets</div>
+      <div style="flex-grow: 1;"></div>
+      <div style="padding: 0 16px; display: flex; align-items: center; gap: 7px; border-left: 1px solid #1e2a3a; color: #00e5c8;">
+        <span style="width: 7px; height: 7px; background: #00e5c8; box-shadow: 0 0 9px #00e5c8;"></span>watchdog armed · 14:31:00
+      </div>
+      <div style="padding: 0 16px; display: flex; align-items: center; color: #4a5568;">GET /api/pomodoro/state · 200</div>
+    </div>
+
+    <div style="flex-grow: 1; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+
+      <div style="display: flex; gap: 14px;">
+
+        <div style="width: 392px; flex-shrink: 0; background: #12121a; border: 1px solid #1e2a3a; border-radius: 8px;">
+          <div class="m" style="padding: 8px 14px; border-bottom: 1px solid #1e2a3a; font-size: 11px; letter-spacing: 0.1em; color: #4a5568;">ACTIVE SESSION</div>
+          <div style="padding: 20px; display: flex; flex-direction: column; align-items: center;">
+            <div style="position: relative; width: 236px; height: 236px;">
+              <svg width="236" height="236" viewBox="0 0 236 236" aria-hidden="true">
+                <circle cx="118" cy="118" r="100" fill="none" stroke="#1a1a28" stroke-width="10"></circle>
+                <circle cx="118" cy="118" r="100" fill="none" stroke="#00e5c8" stroke-width="10" stroke-dasharray="628.3" stroke-dashoffset="182" transform="rotate(-90 118 118)" style="filter: drop-shadow(0 0 7px rgba(0,229,200,0.55));"></circle>
+                <circle cx="118" cy="118" r="82" fill="none" stroke="#1e2a3a" stroke-width="1" stroke-dasharray="3 6"></circle>
+              </svg>
+              <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="m" style="font-size: 54px; font-weight: 500; letter-spacing: -0.03em; line-height: 1;">24:13</div>
+                <div class="m" style="font-size: 11px; color: #00e5c8; letter-spacing: 0.14em; margin-top: 6px;">FOCUS · 3/4</div>
+                <div class="m" style="font-size: 10px; color: #4a5568; margin-top: 3px;">ends_at 14:31:00</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 18px; width: 100%;">
+              <button style="flex-grow: 1; background: #00e5c8; color: #0a0a0f; border: none; border-radius: 4px; padding: 10px; font-size: 12.5px; font-weight: 700;">PAUSE</button>
+              <button style="background: #16161f; color: #c8d6e5; border: 1px solid #1e2a3a; border-radius: 4px; padding: 10px 14px; font-size: 12.5px;">INTERRUPT</button>
+              <button style="background: #16161f; color: #ff4466; border: 1px solid #1e2a3a; border-radius: 4px; padding: 10px 14px; font-size: 12.5px;">ABORT</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 14px;">
+          <div style="background: #12121a; border: 1px solid #1e2a3a; border-radius: 8px; padding: 14px;">
+            <label for="proj" class="m" style="display: block; font-size: 11px; letter-spacing: 0.1em; color: #4a5568; margin-bottom: 8px;">PROJECT</label>
+            <div style="display: flex; gap: 8px;">
+              <select id="proj" class="m" style="flex-grow: 1; font-size: 13px; color: #c8d6e5; background: #16161f; border: 1px solid #1e2a3a; border-radius: 4px; padding: 9px 10px;">
+                <option>rocketz-flying-in-the-wind</option>
+                <option>gamedev-tools</option>
+              </select>
+              <button style="background: #16161f; color: #c8d6e5; border: 1px solid #1e2a3a; border-radius: 4px; padding: 9px 12px; font-size: 12px;">edit</button>
+              <button style="background: #16161f; color: #c8d6e5; border: 1px solid #1e2a3a; border-radius: 4px; padding: 9px 12px; font-size: 12px;">new</button>
+              <button style="background: #16161f; color: #ff4466; border: 1px solid #1e2a3a; border-radius: 4px; padding: 9px 12px; font-size: 12px;">rm</button>
+            </div>
+            <div class="m" style="display: flex; gap: 6px; margin-top: 10px; font-size: 11px;">
+              <span style="background: rgba(0,229,200,0.12); color: #00e5c8; border: 1px solid rgba(0,229,200,0.3); border-radius: 3px; padding: 3px 8px;">issue:#42</span>
+              <span style="background: #16161f; color: #6b7d8f; border: 1px solid #1e2a3a; border-radius: 3px; padding: 3px 8px;">preset:classic-25-5-15</span>
+              <span style="background: #16161f; color: #6b7d8f; border: 1px solid #1e2a3a; border-radius: 3px; padding: 3px 8px;">tag:code</span>
+            </div>
+          </div>
+
+          <div id="kpis" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;"></div>
+
+          <div style="background: #12121a; border: 1px solid #1e2a3a; border-radius: 8px; padding: 14px; flex-grow: 1;">
+            <div class="m" style="font-size: 11px; letter-spacing: 0.1em; color: #4a5568; margin-bottom: 12px;">FOCUS CALENDAR · 26 WEEKS</div>
+            <div id="heat" style="display: grid; grid-template-rows: repeat(7, 12px); grid-auto-flow: column; gap: 3px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 150px; background: #12121a; border: 1px solid #1e2a3a; border-radius: 8px; display: flex; flex-direction: column;">
+        <div class="m" style="padding: 7px 14px; border-bottom: 1px solid #1e2a3a; font-size: 11px; letter-spacing: 0.1em; color: #4a5568;">EVENT LOG</div>
+        <div id="log" class="m" style="padding: 9px 14px; font-size: 12px; line-height: 1.65;"></div>
+      </div>
+    </div>
+
+    <div class="m" style="height: 26px; background: #00e5c8; color: #0a0a0f; display: flex; align-items: center; padding: 0 14px; gap: 18px; font-size: 11px; font-weight: 700;">
+      <span>● FOCUS 24:13</span><span>rocketz #42</span><span>4/8 today</span><span>streak 6d</span>
+      <span style="flex-grow: 1;"></span>
+      <span>pomodoro.db · 1.482 sessions</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var i;
+
+    var kpis = [['TODAY', '4/8'], ['FOCUS', '1:45h'], ['COMPLETION', '87%'], ['INTERRUPTS', '1.2']];
+    var kpiBox = document.getElementById('kpis');
+    for (i = 0; i < kpis.length; i++) {
+        var card = document.createElement('div');
+        card.style.cssText = 'background: #12121a; border: 1px solid #1e2a3a; border-radius: 8px; padding: 12px;';
+        card.innerHTML =
+            '<div class="m" style="font-size: 10px; letter-spacing: 0.08em; color: #4a5568;">' + kpis[i][0] + '</div>' +
+            '<div class="m" style="font-size: 22px; color: #c8d6e5; margin-top: 6px;">' + kpis[i][1] + '</div>';
+        kpiBox.appendChild(card);
+    }
+
+    var pal = ['#161622', '#0d4a44', '#0f7a6c', '#0fbfa4', '#00e5c8'];
+    var heat = document.getElementById('heat');
+    for (i = 0; i < 126; i++) {
+        var c = document.createElement('div');
+        c.style.cssText = 'width: 12px; height: 12px; border-radius: 2px; background: ' +
+            pal[(i * 3 + (i % 7) * 2 + (i % 11)) % 5] + ';';
+        heat.appendChild(c);
+    }
+
+    var log = [
+        ['14:06:02', 'START ', '#00e5c8', 'session 8f3a1c · work 25:00 · rocketz · issue #42'],
+        ['13:31:00', 'DONE  ', '#00e5a0', 'session 7b21de · 25:00 · focus 4/5 · interrupts 0'],
+        ['13:05:44', 'NOTIFY', '#3b82f6', 'toast + winsound · break finished'],
+        ['12:40:12', 'ABORT ', '#ff4466', 'session 6c09aa · 12:40 of 25:00 · reason: meeting'],
+        ['12:27:33', 'INTR  ', '#f0a500', 'session 6c09aa · external interruption #3']
+    ];
+    var logBox = document.getElementById('log');
+    for (i = 0; i < log.length; i++) {
+        var line = document.createElement('div');
+        line.innerHTML =
+            '<span style="color: #4a5568;">' + log[i][0] + '</span> ' +
+            '<span style="color: ' + log[i][2] + ';">' + log[i][1].replace(/ /g, '&nbsp;') + '</span> ' +
+            '<span style="color: #8fa3b5;">' + log[i][3] + '</span>';
+        logBox.appendChild(line);
+    }
+})();
+</script>
+</body>
+</html>

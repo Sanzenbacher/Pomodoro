@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pomodoro-Mockup — Pflanzen zuordnen</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap">
+<link rel="stylesheet" href="app.css">
+<style>
+  .rule-box { margin-top: 18px; padding: 14px 18px; border: 1px solid var(--pomo-line); border-left: 2px solid var(--pomo-a3); background: color-mix(in srgb, var(--pomo-surface) 70%, transparent); font-size: 13.5px; line-height: 1.6; }
+  .cards { margin-top: 18px; }
+  .thead { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 14px; padding: 12px 0 6px; }
+  .trow { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--pomo-line); position: relative; }
+  .who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .who .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .who .nm { font-size: 19px; }
+  .who .k { font-size: 10px; letter-spacing: .2em; color: var(--pomo-muted); }
+  .pick { display: flex; align-items: center; gap: 10px; background: transparent; border: 1px solid var(--pomo-line); border-radius: 6px; padding: 5px 10px 5px 5px; text-align: left; width: 100%; transition: border-color .3s; }
+  .pick:hover, .pick.open { border-color: var(--pomo-a1); }
+  .pick .icon { width: 40px; height: 40px; }
+  .pick .pn { font-size: 17px; }
+  .pick .ps { font-size: 11px; color: var(--pomo-muted); }
+  .hist { font-size: 11px; color: var(--pomo-a2); margin-top: 4px; }
+  .pop { grid-column: 1 / -1; border: 1px solid var(--pomo-line); border-radius: 8px; padding: 14px; background: #120d1c; margin-top: 4px; }
+  .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+  .ptile { border: 1px solid var(--pomo-line); border-radius: 6px; background: transparent; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .ptile:hover { border-color: var(--pomo-a3); }
+  .ptile.cur { border-color: var(--pomo-a1); }
+  .ptile .icon { width: 56px; height: 56px; }
+  .ptile .pn { font-size: 15px; }
+  .ptile .ps { font-size: 10px; color: var(--pomo-muted); letter-spacing: .06em; text-align: center; }
+  .confirm { margin-top: 12px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 13.5px; }
+  .preview { margin-top: 18px; }
+  .preview canvas { display: block; width: 100%; height: 300px; border-radius: 6px; margin-top: 12px; }
+  .pv-tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  @media (max-width: 760px) { .thead { display: none; } .trow { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <b>MOCKUP</b>
+  <span>Heute ist der 10. November 2026. Daten sind Beispiele.</span>
+  <a href="../index.html">← Übersicht</a>
+</div>
+<div id="pomo-root">
+  <div class="veil"></div><div class="scrim"></div>
+  <header class="topbar">
+    <a class="wordmark" href="#"><span class="cg">GameDev</span><span class="atelier">ATELIER</span></a>
+    <nav><a href="13-hauptseite-hintergrund.html">TIMER</a><a href="#">JOURNAL</a><a href="12-biotop.html" class="on">BIOTOP</a><a href="#">STATISTIK</a><a href="#">PROJEKTE</a><a href="#">EINSTELLUNGEN</a></nav>
+    <div class="mini"><span class="l">FOKUS</span><span class="t cg">18:42</span></div>
+  </header>
+
+  <main class="wrap">
+    <div class="page-head">
+      <div><div class="eyebrow">BIOTOP · PFLANZEN ZUORDNEN</div><div class="cg page-title">Was wächst wofür?</div></div>
+      <a class="textbtn" href="12-biotop.html">← ZURÜCK ZUM BIOTOP</a>
+    </div>
+
+    <div class="rule-box">
+      Jedes Projekt und jede Art von Aktivität hat <b style="font-weight: 500;">eine Pflanze im Garten und eine im Wald</b>.
+      Neue Projekte und Arten bekommen von selbst eine Pflanze, die noch frei ist.
+      <br>Eine Änderung gilt <b style="font-weight: 500; color: var(--pomo-a3);">ab jetzt</b>: Was schon gewachsen ist, bleibt, wie es ist.
+      Das gilt für den laufenden Monat und für alle Monate in der Galerie.
+    </div>
+
+    <div class="card cards" id="list"></div>
+
+    <div class="card preview">
+      <h3>PROBE IM LAUFENDEN MONAT</h3>
+      <div class="note" style="font-size: 12.5px;">Ändere oben eine Pflanze und schließe hier eine Arbeitsphase ab. Die neue Pflanze wächst, die bisherigen bleiben.</div>
+      <canvas id="pv"></canvas>
+      <div class="pv-tools">
+        <span class="label">ARBEITSPHASE FÜR</span>
+        <select id="pv-target" style="background: var(--pomo-surface); border: 1px solid var(--pomo-line); padding: 6px 8px; border-radius: 4px;"></select>
+        <button class="btn small" id="pv-add">ABSCHLIESSEN</button>
+        <div class="seg" id="pv-theme" style="margin-left: auto;"><button data-t="garten" class="on">GARTEN</button><button data-t="wald">WALD</button></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="welt.js"></script>
+<script>
+(function () {
+  const B = Biotop, $ = id => document.getElementById(id);
+  const map = { garten: Object.assign({}, B.DEFAULT_MAP.garten), wald: Object.assign({}, B.DEFAULT_MAP.wald) };
+  const hist = {};          // key|theme -> frühere Pflanze
+  let open = null, choice = null;
+  const CAT = { bluete: 'Blüte', blatt: 'Blattpflanze', strauch: 'Strauch, Frucht', pilz: 'Pilz', laub: 'Laubbaum', nadel: 'Nadelbaum', unterholz: 'Unterholz' };
+  const usedBy = (theme, plant, except) => B.TARGETS.filter(t => t.key !== except && map[theme][t.key] === plant).map(t => t.name);
+
+  function render() {
+    const rows = B.TARGETS.map(t => {
+      const cell = th => {
+        const p = B.PLANTS[map[th][t.key]], h = hist[t.key + '|' + th];
+        return `<div><button class="pick ${open && open.key === t.key && open.th === th ? 'open' : ''}" data-key="${t.key}" data-th="${th}">
+          <canvas class="icon" data-plant="${p.id}"></canvas><div><div class="cg pn">${p.name}</div><div class="ps">${CAT[p.cat]}</div></div></button>
+          ${h ? `<div class="hist">seit 10. Nov · bis dahin ${B.PLANTS[h].name}</div>` : ''}</div>`;
+      };
+      let pop = '';
+      if (open && open.key === t.key) {
+        const th = open.th, cur = map[th][t.key];
+        pop = `<div class="pop"><div class="label" style="margin-bottom: 10px;">${th === 'garten' ? 'GARTEN' : 'WALD'} · PFLANZE FÜR ${t.name.toUpperCase()}</div><div class="pgrid">` +
+          B.plantsOf(th).map(p => { const u = usedBy(th, p.id, t.key);
+            return `<button class="ptile ${p.id === (choice || cur) ? 'cur' : ''}" data-choose="${p.id}"><canvas class="icon" data-plant="${p.id}"></canvas>
+              <div class="cg pn">${p.name}</div><div class="ps">${CAT[p.cat]}${u.length ? '<br>auch bei ' + u.join(', ') : ''}</div></button>`; }).join('') + '</div>' +
+          (choice && choice !== cur ? `<div class="confirm"><span>Ab jetzt wachsen für <b style="font-weight:500">${t.name}</b> ${B.PLANTS[choice].name} statt ${B.PLANTS[cur].name}.
+            Die ${count(th, t.key)} schon gewachsenen bleiben.</span><button class="btn small primary" id="ok">ÜBERNEHMEN</button><button class="btn small" id="cancel">ABBRECHEN</button></div>` : '') + '</div>';
+      }
+      return `<div class="trow"><div class="who"><span class="dot" style="background:${t.color || 'var(--pomo-a3)'}"></span>
+        <div><div class="cg nm">${t.name}</div><div class="k">${t.kind.toUpperCase()}</div></div></div>${cell('garten')}${cell('wald')}${pop}</div>`;
+    });
+    $('list').innerHTML = `<div class="thead"><div class="label">PROJEKT ODER AKTIVITÄT</div><div class="label">IM GARTEN</div><div class="label">IM WALD</div></div>` + rows.join('');
+    document.querySelectorAll('#list [data-plant]').forEach(cv => B.drawPlantIcon(cv, cv.dataset.plant, 'summer'));
+    $('pv-target').innerHTML = B.TARGETS.map(t => `<option value="${t.key}">${t.name} · ${B.PLANTS[map[pv.theme][t.key]].name}</option>`).join('');
+  }
+  const count = (th, key) => pv.entries.filter(e => e.src === key).length;
+
+  $('list').addEventListener('click', ev => {
+    const pick = ev.target.closest('.pick'), tile = ev.target.closest('[data-choose]');
+    if (pick) { const k = pick.dataset.key, th = pick.dataset.th; open = open && open.key === k && open.th === th ? null : { key: k, th }; choice = null; render(); return; }
+    if (tile) { choice = tile.dataset.choose; render(); return; }
+    if (ev.target.id === 'cancel') { open = null; choice = null; render(); return; }
+    if (ev.target.id === 'ok') {
+      const k = open.key, th = open.th, h = k + '|' + th;
+      if (!hist[h]) hist[h] = map[th][k];
+      map[th][k] = choice; if (hist[h] === choice) delete hist[h];
+      open = null; choice = null; render();
+    }
+  });
+
+  const entries = B.demo({ year: 2026, month: 11, days: 10, theme: 'garten' });
+  const pv = new B.World($('pv'), { theme: 'garten', year: 2026, month: 11, entries, day: 10, labels: true, camY: 430 });
+  $('pv-add').onclick = () => {
+    const k = $('pv-target').value, alt = { garten: map.garten[k], wald: map.wald[k] };
+    pv.addEntry({ d: 10, src: k, plant: alt[pv.theme], alt });
+  };
+  $('pv-theme').addEventListener('click', ev => {
+    const t = ev.target.dataset.t; if (!t) return;
+    document.querySelectorAll('#pv-theme button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+    pv.setTheme(t); render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>

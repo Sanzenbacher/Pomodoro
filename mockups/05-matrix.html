@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Pomodoro-Mockup — Matrix</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Share Tech Mono', monospace; background: #000000; display: flex; justify-content: center; padding: 24px; }
+  a { color: #00FF41; }
+  .frame { width: 1280px; height: 860px; background: #000000; color: #00FF41; position: relative; overflow: hidden; }
+  button { font-family: 'Share Tech Mono', monospace; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <div id="rain" style="position: absolute; inset: 0; overflow: hidden;"></div>
+  <div style="position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0), rgba(0,0,0,0) 2px, rgba(0,0,0,0.5) 2px, rgba(0,0,0,0.5) 4px);"></div>
+  <div style="position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,0.85) 100%);"></div>
+
+  <div style="position: relative; height: 860px; display: flex;">
+
+    <!-- Main -->
+    <div style="flex-grow: 1; padding: 22px 26px; display: flex; flex-direction: column; gap: 16px;">
+
+      <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid rgba(0,255,65,0.3); padding-bottom: 10px;">
+        <div style="font-size: 22px; letter-spacing: 0.22em; text-shadow: 0 0 10px rgba(0,255,65,0.55);">[ FOCUS PROTOCOL ]</div>
+        <div style="font-size: 14px; color: rgba(0,255,65,0.65);">UPTIME 06d 04h · SESSIONS 1482 · SYNC OK · WATCHDOG ARMED 14:31:00</div>
+      </div>
+
+      <div style="display: flex; gap: 18px;">
+
+        <div style="width: 420px; flex-shrink: 0; border: 1px solid rgba(0,255,65,0.4); background: rgba(0,12,4,0.78); padding: 20px; display: flex; flex-direction: column; align-items: center;">
+          <div style="width: 100%; display: flex; justify-content: space-between; font-size: 12px; color: rgba(0,255,65,0.6); letter-spacing: 0.1em;">
+            <span>╔ SESSION 8F3A1C</span><span>CYCLE 3/4 ╗</span>
+          </div>
+          <div style="font-family: 'VT323', monospace; font-size: 138px; line-height: 1; text-shadow: 0 0 18px rgba(0,255,65,0.85), 0 0 46px rgba(0,255,65,0.35); margin: 14px 0 4px;">24:13</div>
+          <div style="font-size: 15px; letter-spacing: 0.32em; color: #7CFFA8;">DEEP FOCUS</div>
+
+          <div id="prog" style="width: 100%; height: 16px; border: 1px solid rgba(0,255,65,0.45); margin-top: 18px; display: flex; gap: 2px; padding: 2px;"></div>
+          <div style="width: 100%; display: flex; justify-content: space-between; font-size: 12px; color: rgba(0,255,65,0.55); margin-top: 5px;">
+            <span>00:47 ELAPSED</span><span>25:00 ALLOCATED</span>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 20px; width: 100%;">
+            <button style="flex-grow: 1; background: rgba(0,255,65,0.16); color: #00FF41; border: 1px solid #00FF41; padding: 11px; font-size: 14px; letter-spacing: 0.14em;">[ HALT ]</button>
+            <button style="background: transparent; color: rgba(0,255,65,0.72); border: 1px solid rgba(0,255,65,0.4); padding: 11px 14px; font-size: 14px; letter-spacing: 0.1em;">[ INTR ]</button>
+            <button style="background: transparent; color: #FF3355; border: 1px solid rgba(255,51,85,0.55); padding: 11px 14px; font-size: 14px; letter-spacing: 0.1em;">[ KILL ]</button>
+          </div>
+        </div>
+
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 14px;">
+          <div style="border: 1px solid rgba(0,255,65,0.4); background: rgba(0,12,4,0.78); padding: 14px;">
+            <label for="proj" style="display: block; font-size: 12px; letter-spacing: 0.14em; color: rgba(0,255,65,0.6); margin-bottom: 8px;">TARGET PROJECT</label>
+            <div style="display: flex; gap: 8px;">
+              <select id="proj" style="flex-grow: 1; font-family: 'Share Tech Mono', monospace; font-size: 15px; color: #00FF41; background: #000000; border: 1px solid rgba(0,255,65,0.45); padding: 9px;">
+                <option>ROCKETZ_FLYING_IN_THE_WIND</option>
+                <option>GAMEDEV_TOOLS</option>
+              </select>
+              <button style="background: transparent; color: #00FF41; border: 1px solid rgba(0,255,65,0.45); padding: 9px 12px; font-size: 13px;">MOD</button>
+              <button style="background: transparent; color: #00FF41; border: 1px solid rgba(0,255,65,0.45); padding: 9px 12px; font-size: 13px;">NEW</button>
+              <button style="background: transparent; color: #FF3355; border: 1px solid rgba(255,51,85,0.45); padding: 9px 12px; font-size: 13px;">DEL</button>
+            </div>
+            <div style="margin-top: 10px; font-size: 13px; color: rgba(0,255,65,0.62);">&gt; LINKED: ISSUE #42 WATER_FLOW_SWITCH · PRESET CLASSIC_25_5_15</div>
+          </div>
+
+          <div id="kpis" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;"></div>
+
+          <div style="border: 1px solid rgba(0,255,65,0.4); background: rgba(0,12,4,0.78); padding: 14px; flex-grow: 1;">
+            <div style="font-size: 12px; letter-spacing: 0.14em; color: rgba(0,255,65,0.6); margin-bottom: 12px;">FOCUS MATRIX · 26 WEEKS</div>
+            <div id="heat" style="display: grid; grid-template-rows: repeat(7, 12px); grid-auto-flow: column; gap: 3px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border: 1px solid rgba(0,255,65,0.32); background: rgba(0,12,4,0.78); padding: 12px 14px; font-size: 14px; line-height: 1.6;">
+        <div id="log"></div>
+        <div>&gt; <span style="background: #00FF41; color: #000000;">&nbsp;</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var glyphs = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEFXYZ';
+    var rain = document.getElementById('rain');
+    var c, j;
+    for (c = 0; c < 32; c++) {
+        var len = 12 + ((c * 7) % 22);
+        var s = '';
+        for (j = 0; j < len; j++) { s += glyphs.charAt((c * 13 + j * 7) % glyphs.length) + '\n'; }
+        var col = document.createElement('div');
+        col.style.cssText = 'position: absolute; top: ' + (((c * 97) % 700) - 240) + 'px; left: ' + (c * 41) +
+            'px; white-space: pre; font-size: 15px; line-height: 1.05; color: #00FF41; opacity: ' +
+            (0.07 + ((c % 5) * 0.035)).toFixed(3) + ';';
+        col.textContent = s;
+        rain.appendChild(col);
+    }
+
+    var i;
+
+    var prog = document.getElementById('prog');
+    for (i = 0; i < 40; i++) {
+        var seg = document.createElement('div');
+        seg.style.cssText = 'flex-grow: 1; background: ' + (i < 3 ? '#00FF41' : 'rgba(0,255,65,0.12)') + ';';
+        prog.appendChild(seg);
+    }
+
+    var kpis = [['TODAY', '4/8'], ['FOCUS', '1:45'], ['RATE', '87%'], ['STREAK', '6d']];
+    var kpiBox = document.getElementById('kpis');
+    for (i = 0; i < kpis.length; i++) {
+        var card = document.createElement('div');
+        card.style.cssText = 'border: 1px solid rgba(0,255,65,0.32); background: rgba(0,12,4,0.78); padding: 12px;';
+        card.innerHTML =
+            '<div style="font-size: 11px; letter-spacing: 0.1em; color: rgba(0,255,65,0.55);">' + kpis[i][0] + '</div>' +
+            '<div style="font-family: \'VT323\', monospace; font-size: 34px; line-height: 1.05; text-shadow: 0 0 10px rgba(0,255,65,0.5);">' + kpis[i][1] + '</div>';
+        kpiBox.appendChild(card);
+    }
+
+    var pal = ['#041008', '#04431A', '#067A2C', '#0BC44A', '#00FF41'];
+    var heat = document.getElementById('heat');
+    for (i = 0; i < 126; i++) {
+        var cell = document.createElement('div');
+        cell.style.cssText = 'width: 12px; height: 12px; background: ' + pal[(i * 3 + (i % 7) * 2 + (i % 11)) % 5] + ';';
+        heat.appendChild(cell);
+    }
+
+    var log = [
+        ['14:06:02', '>> SESSION SPAWNED :: WORK 25:00 :: TARGET ROCKETZ'],
+        ['13:31:00', '>> SESSION CLOSED  :: FOCUS 4/5 :: INTERRUPTS 0'],
+        ['13:05:44', '>> ALERT DISPATCHED :: TOAST + AUDIO :: BREAK END'],
+        ['12:40:12', '>> SESSION TERMINATED :: 12:40/25:00 :: REASON MEETING']
+    ];
+    var logBox = document.getElementById('log');
+    for (i = 0; i < log.length; i++) {
+        var line = document.createElement('div');
+        line.innerHTML = '<span style="color: rgba(0,255,65,0.5);">' + log[i][0] + '</span> ' +
+                         '<span style="color: #7CFFA8;"></span>';
+        line.lastChild.textContent = log[i][1];
+        logBox.appendChild(line);
+    }
+})();
+</script>
+</body>
+</html>

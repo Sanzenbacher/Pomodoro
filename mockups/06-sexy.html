@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Pomodoro-Mockup — Sexy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Jost:wght@300;400;500&display=swap">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Jost', sans-serif; background: #0B0509; display: flex; justify-content: center; padding: 24px; }
+  a { color: #D9AE6B; }
+  .frame { width: 1280px; height: 860px; background: #120A10; color: #F2E4DC; display: flex; overflow: hidden; position: relative; border-radius: 4px; }
+  button { font-family: 'Jost', sans-serif; cursor: pointer; }
+  .pf { font-family: 'Playfair Display', serif; }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <div style="position: absolute; top: -220px; left: 120px; width: 780px; height: 620px; border-radius: 50%; background: radial-gradient(circle, rgba(191,58,84,0.30) 0%, rgba(18,10,16,0) 68%);"></div>
+  <div style="position: absolute; bottom: -260px; right: -80px; width: 720px; height: 620px; border-radius: 50%; background: radial-gradient(circle, rgba(217,174,107,0.16) 0%, rgba(18,10,16,0) 70%);"></div>
+
+  <!-- Main -->
+  <div style="flex-grow: 1; display: flex; position: relative; z-index: 2;">
+
+    <div style="width: 740px; flex-shrink: 0; padding: 44px 60px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid rgba(217,174,107,0.18);">
+      <div style="font-size: 10px; letter-spacing: 0.4em; color: rgba(217,174,107,0.8);">SITZUNG DREI VON VIER</div>
+      <div class="pf" style="font-size: 40px; font-weight: 400; margin-top: 12px;">Tiefe Konzentration</div>
+      <div style="width: 74px; height: 1px; background: #D9AE6B; margin: 22px 0;"></div>
+
+      <div style="display: flex; align-items: flex-end; gap: 26px;">
+        <div class="pf" style="font-size: 148px; font-weight: 400; line-height: 0.84; letter-spacing: -0.035em;">24:13</div>
+        <div style="padding-bottom: 14px;">
+          <div style="font-size: 11px; letter-spacing: 0.26em; color: rgba(242,228,220,0.5);">VON 25:00</div>
+          <div style="font-size: 11px; letter-spacing: 0.26em; color: rgba(242,228,220,0.5); margin-top: 5px;">ENDE 14:31</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 34px; height: 2px; background: rgba(242,228,220,0.12); position: relative;">
+        <div style="position: absolute; left: 0; top: 0; height: 2px; width: 3.2%; background: #D9AE6B;"></div>
+        <div style="position: absolute; left: 3.2%; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #D9AE6B; box-shadow: 0 0 16px rgba(217,174,107,0.9);"></div>
+      </div>
+
+      <div style="display: flex; gap: 12px; margin-top: 38px;">
+        <button style="background: #D9AE6B; color: #120A10; border: none; border-radius: 999px; padding: 14px 40px; font-size: 13px; font-weight: 500; letter-spacing: 0.2em;">PAUSIEREN</button>
+        <button style="background: transparent; color: #F2E4DC; border: 1px solid rgba(217,174,107,0.45); border-radius: 999px; padding: 14px 26px; font-size: 13px; font-weight: 300; letter-spacing: 0.2em;">STÖRUNG</button>
+        <button style="background: transparent; color: rgba(242,228,220,0.55); border: 1px solid rgba(242,228,220,0.2); border-radius: 999px; padding: 14px 26px; font-size: 13px; font-weight: 300; letter-spacing: 0.2em;">VERWERFEN</button>
+      </div>
+
+      <div style="margin-top: 42px; display: flex; gap: 10px; align-items: center;">
+        <div id="dots" style="display: flex; gap: 10px;"></div>
+        <div style="font-size: 11px; letter-spacing: 0.22em; color: rgba(242,228,220,0.45); margin-left: 8px;">VIER VON ACHT HEUTE</div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; padding: 40px 38px; display: flex; flex-direction: column; gap: 26px;">
+
+      <div>
+        <label for="proj" style="display: block; font-size: 10px; letter-spacing: 0.34em; color: rgba(217,174,107,0.8); margin-bottom: 11px;">PROJEKT</label>
+        <select id="proj" class="pf" style="width: 100%; font-size: 20px; color: #F2E4DC; background: transparent; border: none; border-bottom: 1px solid rgba(217,174,107,0.4); padding: 8px 0;">
+          <option>Rocketz Flying in the Wind</option>
+          <option>GameDevTools</option>
+        </select>
+        <div style="display: flex; gap: 20px; margin-top: 12px;">
+          <button style="background: none; border: none; padding: 0; font-size: 11px; letter-spacing: 0.2em; color: rgba(217,174,107,0.95);">BEARBEITEN</button>
+          <button style="background: none; border: none; padding: 0; font-size: 11px; letter-spacing: 0.2em; color: rgba(217,174,107,0.95);">NEU</button>
+          <button style="background: none; border: none; padding: 0; font-size: 11px; letter-spacing: 0.2em; color: rgba(191,58,84,0.95);">LÖSCHEN</button>
+        </div>
+        <div style="font-size: 12px; font-weight: 300; color: rgba(242,228,220,0.55); margin-top: 16px; letter-spacing: 0.06em;">Issue #42 · Water flow switch &nbsp;·&nbsp; Preset Classic 25 / 5 / 15</div>
+      </div>
+
+      <div style="height: 1px; background: rgba(217,174,107,0.18);"></div>
+
+      <div id="kpis" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 20px;"></div>
+
+      <div style="height: 1px; background: rgba(217,174,107,0.18);"></div>
+
+      <div>
+        <div style="font-size: 10px; letter-spacing: 0.34em; color: rgba(217,174,107,0.8); margin-bottom: 14px;">FOKUS NACH TAGESZEIT</div>
+        <div id="hours" style="display: flex; align-items: flex-end; gap: 3px; height: 96px;"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 0.16em; color: rgba(242,228,220,0.35); margin-top: 8px;">
+          <span>00</span><span>08</span><span>16</span><span>23</span>
+        </div>
+        <div class="pf" style="font-size: 12px; color: rgba(242,228,220,0.6); margin-top: 16px; font-style: italic;">Dein bestes Fenster: 15 – 17 Uhr.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var i;
+
+    var dots = document.getElementById('dots');
+    for (i = 0; i < 8; i++) {
+        var d = document.createElement('div');
+        d.style.cssText = 'width: 11px; height: 11px; border-radius: 50%; background: ' +
+            (i < 4 ? '#D9AE6B' : 'transparent') + '; border: 1px solid ' +
+            (i < 4 ? '#D9AE6B' : 'rgba(217,174,107,0.45)') + ';';
+        dots.appendChild(d);
+    }
+
+    var kpis = [
+        ['1 h 45', 'FOKUS HEUTE', '#F2E4DC'],
+        ['87 %', 'ABSCHLUSSQUOTE', '#D9AE6B'],
+        ['6', 'TAGE IN FOLGE', '#F2E4DC'],
+        ['1,2', 'Ø STÖRUNGEN', '#BF3A54']
+    ];
+    var kpiBox = document.getElementById('kpis');
+    for (i = 0; i < kpis.length; i++) {
+        var k = document.createElement('div');
+        k.innerHTML =
+            '<div class="pf" style="font-size: 36px; font-weight: 400; color: ' + kpis[i][2] + '; line-height: 1;">' + kpis[i][0] + '</div>' +
+            '<div style="font-size: 10px; letter-spacing: 0.24em; color: rgba(242,228,220,0.45); margin-top: 7px;">' + kpis[i][1] + '</div>';
+        kpiBox.appendChild(k);
+    }
+
+    var data = [2, 1, 0, 0, 0, 0, 3, 9, 22, 41, 58, 63, 38, 29, 52, 71, 66, 48, 31, 24, 18, 11, 7, 4];
+    var hourBox = document.getElementById('hours');
+    for (i = 0; i < data.length; i++) {
+        var v = data[i];
+        var bar = document.createElement('div');
+        bar.style.cssText = 'flex-grow: 1; height: ' + (Math.round((v / 71) * 92) + 4) + 'px; background: ' +
+            (v > 45 ? '#D9AE6B' : (v > 20 ? 'rgba(217,174,107,0.5)' : 'rgba(242,228,220,0.14)')) + ';';
+        hourBox.appendChild(bar);
+    }
+})();
+</script>
+</body>
+</html>

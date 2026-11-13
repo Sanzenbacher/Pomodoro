@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}Statistik{% endblock %}
+
+{% macro dur(seconds) -%}
+  {{ seconds // 60 }}:{{ '%02d' % (seconds % 60) }}
+{%- endmacro %}
+
+{% macro kpi(value, label, note='', color='') %}
+  <div class="card">
+    <h3>{{ label }}</h3>
+    <div class="cg big" {% if color %}style="color: var(--pomo-{{ color }})"{% endif %}>{{ value }}</div>
+    {% if note %}<div class="note">{{ note }}</div>{% endif %}
+  </div>
+{% endmacro %}
+
+{% block content %}
+<div class="wrap">
+
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">AUSWERTUNG</div>
+      <div class="cg page-title">
+        {% if filter_project %}{{ filter_projects | selectattr('id', 'equalto', filter_project) | map(attribute='label') | first }}{% else %}Alle Projekte{% endif %}
+      </div>
+    </div>
+    <div style="display: flex; gap: 9px;">
+      <a class="btn small" href="/api/pomodoro/export.csv?range={{ range_key }}{% if filter_project %}&project={{ filter_project }}{% endif %}">CSV EXPORTIEREN</a>
+    </div>
+  </div>
+
+  <div class="filters">
+    {% for key, label in [('today', 'HEUTE'), ('7', '7 TAGE'), ('30', '30 TAGE'), ('quarter', 'QUARTAL'), ('all', 'ALLES')] %}
+      <a href="?range={{ key }}{% if filter_project %}&project={{ filter_project }}{% endif %}"
+         class="{{ 'on' if range_key == key }}">{{ label }}</a>
+    {% endfor %}
+    <span style="width: 14px;"></span>
+    <select class="field" id="proj-filter" style="width: auto; padding: 7px 14px;">
+      <option value="">Alle Projekte</option>
+      {% for p in filter_projects %}
+        <option value="{{ p.id }}" {{ 'selected' if filter_project == p.id }}>{{ p.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- Kennzahlen -->
+  <div class="grid k6">
+    {{ kpi(summary.pomodoros_today ~ ' / ' ~ summary.goal, 'POMODOROS HEUTE',
+           summary.goal_pct ~ ' % vom Tagesziel') }}
+    {{ kpi(summary.focus_minutes_today ~ ' min', 'FOKUS HEUTE',
+           'Ø ' ~ summary.avg_minutes_per_day ~ ' min pro Tag', 'a2') }}
+    {{ kpi(summary.streak, 'TAGE IN FOLGE', 'ohne Unterbrechung', 'a3') }}
+    {{ kpi(summary.completion_rate ~ ' %', 'ABSCHLUSSQUOTE',
+           summary.aborted ~ ' abgebrochen') }}
+    {{ kpi(summary.avg_interruptions, 'Ø STÖRUNGEN', 'je Pomodoro', 'warn') }}
+    {{ kpi((summary.avg_focus_rating | string).replace('.', ',') if summary.avg_focus_rating else '—', 'Ø FOKUS',
+           'von 5 · ' ~ summary.rated ~ ' von ' ~ summary.done ~ ' bewertet', 'a4') }}
+  </div>
+
+  <!-- Ueberzeit. Nicht automatisch gut oder schlecht: "Im Flow" und
+       "Nicht bemerkt" bedeuten etwas voellig anderes. -->
+  {% set share = summary.overtime_reason_share %}
+  <div class="grid k4" style="margin-top: 16px;">
+    {{ kpi(dur(summary.avg_overtime_seconds) if summary.overtime_sessions else '—',
+           'Ø ÜBERZEIT', 'je überzogener Arbeitsphase', 'a2') }}
+    {{ kpi(summary.overtime_share ~ ' %', 'SITZUNGEN MIT ÜBERZEIT',
+           summary.overtime_sessions ~ ' Sitzungen · ' ~ summary.overtime_minutes_total ~ ' min insgesamt') }}
+    {{ kpi(share.flow ~ ' %', 'DAVON IM FLOW',
+           share.finishing ~ ' % musste fertig werden', 'a3') }}
+    {{ kpi(share.unnoticed ~ ' %', 'DAVON NICHT BEMERKT',
+           share.none ~ ' % ohne Angabe', 'warn') }}
+  </div>
+
+  <!-- Tageszeit und Wochentag -->
+  <div class="grid split" style="margin-top: 16px;">
+    <div class="card">
+      <h3>FOKUS NACH TAGESZEIT</h3>
+      <div style="margin-top: 14px;">{{ hours_svg | safe }}</div>
+      <div class="label mono" style="display: flex; justify-content: space-between; margin-top: 8px;">
+        <span>00</span><span>06</span><span>12</span><span>18</span><span>23</span>
+      </div>
+      <div class="legend" style="margin-top: 8px;">
+        {% for item in rating_legend %}
+          <span><i style="background: {{ item.color }}; opacity: {{ item.opacity }};"></i>{{ item.label }}</span>
+        {% endfor %}
+      </div>
+      {% if best_window %}
+        <div class="hand" style="font-size: 20px; color: var(--pomo-a2); margin-top: 12px;">
+          dein bestes Fenster: {{ '%02d' % best_window.from }} – {{ '%02d' % best_window.to }} Uhr
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h3>VERTEILUNG NACH WOCHENTAG</h3>
+      <div style="margin-top: 14px;">{{ weekday_svg | safe }}</div>
+      <div class="note" style="margin-top: 14px;">
+        {{ summary.sessions }} Arbeitsphasen im Zeitraum,
+        {{ summary.focus_minutes_total }} Fokusminuten insgesamt.
+      </div>
+    </div>
+  </div>
+
+  <!-- Kalender -->
+  <div class="card" style="margin-top: 16px;">
+    <h3>FOKUSMINUTEN PRO TAG · 26 WOCHEN</h3>
+    <div style="margin-top: 14px; overflow-x: auto;">{{ calendar_svg | safe }}</div>
+  </div>
+
+  <!-- Fokus pro Tag: Plan und Ueberzeit gestapelt -->
+  <div class="card" style="margin-top: 16px;">
+    <h3>FOKUS PRO TAG · NACH PROJEKT</h3>
+    <div style="margin-top: 14px;">{{ focus_bars_svg | safe }}</div>
+    <div class="legend">
+      {% for item in focus_legend %}
+        <span><i style="background: {{ item.color }};"></i>{{ item.label | upper }}</span>
+      {% endfor %}
+      <span><i style="background: var(--pomo-ink); opacity: .45;"></i>BLASS = ÜBERZEIT</span>
+      {% if goal_minutes %}<span><i style="background: none; border-top: 1px dashed var(--pomo-ink); height: 0; border-radius: 0;"></i>TAGESZIEL {{ goal_minutes }} MIN</span>{% endif %}
+      <span class="note" style="margin: 0;">Eine überzogene Sitzung bleibt ein Pomodoro — die Minuten zählen voll. Farben je Projekt unter <a href="/pomodoro/projects">Projekte</a>. Klick auf einen Tag zeigt seine Sitzungen.</span>
+    </div>
+  </div>
+
+  <!-- Wochen -->
+  <div class="card" style="margin-top: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 14px; flex-wrap: wrap;">
+      <h3>FOKUS PRO WOCHE · 12 WOCHEN</h3>
+      <div class="note" style="margin: 0;">
+        Diese Woche <span class="mono">{{ this_week.minutes }} min</span>
+        {%- if this_week.delta_text %} · <span style="color: {{ 'var(--pomo-muted)' if this_week.delta_pct is none else ('var(--pomo-a3)' if this_week.delta_pct >= 0 else 'var(--pomo-warn)') }};">{{ this_week.delta_text }}</span>{% endif %}
+      </div>
+    </div>
+    <div style="margin-top: 14px;">{{ weekly_svg | safe }}</div>
+    <div class="note" style="margin-top: 8px;">Die Zahl unter dem Balken ist die Kalenderwoche; die laufende Woche ist hervorgehoben. Klick auf eine Woche zeigt ihre Sitzungen.</div>
+  </div>
+
+  <!-- Trend und Disziplin -->
+  <div class="grid split" style="margin-top: 16px;">
+    <div class="card">
+      <h3>VERLAUF · TAGESWERT UND 4-WOCHEN-SCHNITT</h3>
+      <div style="margin-top: 14px;">{{ trend_svg | safe }}</div>
+    </div>
+
+    <div class="card">
+      <h3>DISZIPLIN</h3>
+      <table class="sessions" style="margin-top: 10px;">
+        <tr><td>Abbruchquote</td><td class="mono" style="text-align: right;">{{ discipline.abort_rate }} %</td></tr>
+        <tr><td>Pausen genommen</td><td class="mono" style="text-align: right;">{{ discipline.breaks_taken }}</td></tr>
+        <tr><td>Pausen übersprungen</td><td class="mono" style="text-align: right;">{{ discipline.breaks_skipped }} ({{ discipline.skip_rate }} %)</td></tr>
+        <tr><td>Ø Pause geplant / tatsächlich</td><td class="mono" style="text-align: right;">{{ discipline.break_planned_min }} / {{ discipline.break_actual_min }} min</td></tr>
+        <tr><td>Pausen überzogen</td><td class="mono" style="text-align: right;">{{ discipline.breaks_overrun }} ({{ discipline.break_overrun_rate }} %){% if discipline.breaks_overrun %} · Ø <span class="ot">+{{ discipline.break_overrun_avg_min }}</span> min{% endif %}</td></tr>
+        <tr><td>Ø Störungen</td><td class="mono" style="text-align: right;">{{ discipline.avg_interruptions }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Projekte -->
+  <div class="card" style="margin-top: 16px;">
+    <h3>ANTEIL JE PROJEKT</h3>
+    <div style="margin-top: 14px;">{{ breakdown_svg | safe }}</div>
+    <table class="sessions" style="margin-top: 14px;">
+      <tr><th>PROJEKT</th><th>MINUTEN</th><th>POMODOROS</th><th>Ø FOKUS</th><th>ANTEIL</th></tr>
+      {% for b in breakdown %}
+        <tr>
+          <td><i class="swatch" style="background: {{ b.color }};"></i>{{ b.label }}</td>
+          <td class="mono">{{ b.minutes }}</td>
+          <td class="mono">{{ b.count }}</td>
+          <td class="mono">
+            {{ (b.avg_rating | string).replace('.', ',') if b.avg_rating else '—' }}
+            {%- if b.rated < b.count %} <span class="label">({{ b.rated }}/{{ b.count }} bewertet)</span>{% endif %}
+          </td>
+          <td class="mono">{{ b.share }} %</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <!-- Sitzungen -->
+  <div class="card" style="margin-top: 16px;" id="sitzungen">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 14px;">
+      <h3>SITZUNGEN{% if filter_label %} · {{ filter_label | upper }}{% endif %}</h3>
+      {% if filter_label %}<a class="textbtn" href="{{ filter_clear }}">ALLE ZEIGEN</a>{% endif %}
+    </div>
+    {% if filter_label and not rows %}<div class="note" style="margin-top: 10px;">Keine Sitzungen an diesem Tag.</div>{% endif %}
+    <table class="sessions" style="margin-top: 10px;">
+      <tr>
+        <th>START</th><th>PROJEKT</th><th>PHASE</th><th>DAUER</th>
+        <th>GRUND</th><th>STÖRUNG</th><th>FOKUS</th><th>ERGEBNIS</th><th></th>
+      </tr>
+      {% for row in rows %}
+        <tr data-id="{{ row.id }}">
+          <td class="mono">{{ row.local_start }}</td>
+          <td>{{ row.project_label or 'Ohne Projekt' }}</td>
+          <td>{{ {'work': 'Arbeit', 'short_break': 'Pause', 'long_break': 'Lange Pause'}[row.kind] }}</td>
+          <td class="mono">
+            {% if row.actual_seconds is none %}läuft
+            {% elif row.overtime_seconds %}
+              {{ dur(row.planned_seconds) }}<span class="plus {{ 'small' if row.overtime_seconds < 60 }}">+{{ dur(row.overtime_seconds) }}</span>
+            {% else %}{{ dur(row.actual_seconds) }}{% endif %}
+          </td>
+          <td>
+            {% if row.overtime_reason %}<span class="pill reason-{{ row.overtime_reason }}">{{ reason_labels[row.overtime_reason] }}</span>
+            {% elif row.end_chosen %}<span class="pill">Ende gewählt</span>
+            {% elif row.overtime_seconds >= 60 and row.kind == 'work' %}<span class="label">—</span>{% endif %}
+          </td>
+          <td class="mono">{{ row.interruptions }}</td>
+          <td class="mono">{{ row.focus_rating or '—' }}</td>
+          <td>
+            {% if row.outcome == 'completed' %}<span class="pill ok">erledigt</span>
+            {% elif row.outcome == 'aborted' %}<span class="pill bad">abgebrochen</span>
+            {% elif row.outcome == 'discarded' %}<span class="pill">verworfen</span>
+            {% else %}<span class="pill">offen</span>{% endif %}
+          </td>
+          <td style="text-align: right;">
+            <button class="textbtn danger" data-del="{{ row.id }}">LÖSCHEN</button>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="note" style="margin-top: 14px;">
+    Arbeit außerhalb der App trägst du im <a href="/pomodoro/journal" style="color: var(--pomo-a2);">Journal</a> nach.
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    'use strict';
+
+    function reload(params) {
+        var url = new URL(window.location.href);
+        for (var key in params) {
+            if (params[key]) { url.searchParams.set(key, params[key]); }
+            else { url.searchParams.delete(key); }
+        }
+        window.location.href = url.toString();
+    }
+
+    document.getElementById('proj-filter').addEventListener('change', function () {
+        reload({ project: this.value });
+    });
+
+    document.querySelector('.wrap').addEventListener('click', function (event) {
+        var id = event.target.getAttribute('data-del');
+        if (!id) { return; }
+        if (!window.confirm('Diese Sitzung wirklich löschen?')) { return; }
+        Pomo.api('/api/pomodoro/sessions/' + id, null, 'DELETE').then(function () {
+            var row = document.querySelector('tr[data-id="' + id + '"]');
+            if (row) { row.remove(); }
+        });
+    });
+})();
+</script>
+{% endblock %}

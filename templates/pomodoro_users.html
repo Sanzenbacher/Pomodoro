@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wer bist du? · GameDev Tools</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&family=Caveat:wght@500&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pomodoro.css') }}">
+{#
+  Eigenstaendig statt base.html: Noch steht nicht fest, wessen Biotop,
+  Projektfarben und Timer gelten (KONZEPT-BENUTZER.md, 6).
+#}
+<style>
+#pomo-root {
+{{ palette_css | safe }}
+}
+</style>
+</head>
+<body>
+<div id="pomo-root" class="chooser">
+  <svg class="grain" aria-hidden="true">
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3"></feTurbulence></filter>
+    <rect width="100%" height="100%" filter="url(#grain)"></rect>
+  </svg>
+
+  <main class="chooser-main">
+    <div class="wordmark chooser-mark">
+      <span class="cg">GameDev</span><span class="atelier">ATELIER</span>
+    </div>
+    <div class="cg chooser-title">Wer <em>bist</em> du?</div>
+
+    <div class="chooser-grid" id="chooser-grid">
+      {% for u in users_rows %}
+      <button class="chooser-tile {{ 'last' if u.id == current_id }}" type="button" data-user="{{ u.id }}">
+        <span class="user-dot chooser-dot" style="background: {{ u.color }}">{{ u.name[:1] | upper }}</span>
+        <span class="chooser-name cg">{{ u.name }}</span>
+        <span class="chooser-meta">
+          {% if u.state == 'running' %}Timer läuft
+          {% elif u.state == 'paused' %}Timer pausiert
+          {% elif u.state == 'finished' %}Überzeit
+          {% elif u.id == current_id %}zuletzt hier
+          {% else %}&nbsp;{% endif %}
+        </span>
+      </button>
+      {% endfor %}
+    </div>
+
+    <form class="chooser-new" id="chooser-new" autocomplete="off">
+      <input class="field" id="chooser-name" maxlength="40" placeholder="+ Neuer Benutzer">
+      <button class="btn small" type="submit">ANLEGEN</button>
+    </form>
+    <div class="note chooser-error" id="chooser-error" hidden></div>
+  </main>
+</div>
+
+<script>
+(function () {
+    'use strict';
+    var next = {{ next_url | tojson }};
+    var error = document.getElementById('chooser-error');
+
+    function call(path, body) {
+        return fetch(path, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).then(function (r) {
+            return r.json().catch(function () { return {}; }).then(function (data) {
+                if (!r.ok || data.ok === false) { throw new Error(data.reason || ('Server meldet ' + r.status)); }
+                return data;
+            });
+        });
+    }
+
+    function fail(e) { error.textContent = e.message; error.hidden = false; }
+
+    function choose(id) {
+        return call('/api/pomodoro/user/switch', { id: id })
+            .then(function () { window.location.href = next; })
+            .catch(fail);
+    }
+
+    document.getElementById('chooser-grid').addEventListener('click', function (event) {
+        var tile = event.target.closest('[data-user]');
+        if (tile) { choose(tile.getAttribute('data-user')); }
+    });
+
+    document.getElementById('chooser-new').addEventListener('submit', function (event) {
+        event.preventDefault();
+        var name = document.getElementById('chooser-name').value.trim();
+        if (!name) { return; }
+        // Neue Benutzer starten hier mit den Vorgaben: Von wem sollten sie
+        // Einstellungen erben, solange niemand gewaehlt ist?
+        call('/api/pomodoro/users', { name: name, copy_settings: false })
+            .then(function (data) { return choose(data.user.id); })
+            .catch(fail);
+    });
+}());
+</script>
+</body>
+</html>

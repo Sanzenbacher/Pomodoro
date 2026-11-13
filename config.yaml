@@ -1,0 +1,34 @@
+# Pomodoro — Voreinstellungen.
+# Presets und Projekte liegen in der Datenbank und sind in der Oberflaeche
+# editierbar; hier stehen nur Werte, die kein UI brauchen.
+
+pomodoro:
+  daily_goal_pomodoros: 8
+  day_start_hour: 4          # Nachtsessions zaehlen auf den Vortag
+
+  notify:
+    sound: true
+    toast: true
+    raise_window: true
+    sound_file: static/audio/bell.wav
+
+  # Ueberzeit: nach dem Ablauf zaehlt die Uhr weiter (KONZEPT.md, Abschnitt 6).
+  # Nur Vorgaben -- geaendert wird unter Einstellungen.
+  overtime:
+    reminder_min: 5          # leiser Toast alle N Minuten, 0 = aus
+    max_min: 60              # danach steht die Uhr und es kommt die Nachfrage
+
+  # Farbwelt aus dem Projektbild (siehe KONZEPT-PROJEKTFARBEN.md).
+  # false -> alle Projekte im Standardthema.
+  project_colors: true
+  project_image_veil: true   # Bild weichgezeichnet hinter dem Timer
+
+# Mehrere Benutzer (KONZEPT-BENUTZER.md). Nur fuer den allerersten Start:
+# So heisst der Benutzer, in den die bisherigen Daten umziehen. Danach
+# wird unter Einstellungen umbenannt, nicht hier.
+users:
+  first_name: Sascha
+
+server:
+  host: 127.0.0.1
+  port: 5333

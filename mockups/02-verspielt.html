@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Pomodoro-Mockup — Verspielt</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito+Sans:wght@400;600;700&display=swap">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Nunito Sans', sans-serif; background: #DCD7EE; display: flex; justify-content: center; padding: 24px; }
+  a { color: #6B57C8; }
+  .frame { width: 1280px; height: 860px; background: #F7F5FF; display: flex; overflow: hidden; border-radius: 6px; }
+  button { font-family: 'Quicksand', sans-serif; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <!-- Main -->
+  <div style="flex-grow: 1; padding: 30px 34px; display: flex; flex-direction: column; gap: 20px;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="font-family: 'Quicksand', sans-serif; font-size: 27px; font-weight: 700; color: #3B3355;">Pomodoro</div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="background: #FFF4E3; border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 700; color: #B07B2E;">Nächste Pause in 24 min · 5 min</div>
+        <div style="background: #FFFFFF; border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 700; color: #6B7D8F; border: 1px solid #E6E1F7;">Streak 6 Tage</div>
+        <div style="background: #E4F8F0; border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 700; color: #1F8C6C;">Heute 4 / 8</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 20px;">
+
+      <!-- Timer -->
+      <div style="width: 420px; flex-shrink: 0; background: #FFFFFF; border-radius: 24px; padding: 28px; box-shadow: 0 6px 22px rgba(90, 71, 184, 0.09); display: flex; flex-direction: column; align-items: center; gap: 18px;">
+        <div style="display: flex; gap: 6px; background: #F2EEFF; border-radius: 999px; padding: 4px;">
+          <div style="background: #7C63E8; color: #FFFFFF; border-radius: 999px; padding: 6px 18px; font-size: 13px; font-weight: 700;">Fokus</div>
+          <div style="color: #8A82A8; padding: 6px 18px; font-size: 13px; font-weight: 700;">Pause</div>
+          <div style="color: #8A82A8; padding: 6px 18px; font-size: 13px; font-weight: 700;">Lange Pause</div>
+        </div>
+
+        <div style="position: relative; width: 250px; height: 250px;">
+          <svg width="250" height="250" viewBox="0 0 250 250" aria-hidden="true">
+            <circle cx="125" cy="125" r="104" fill="none" stroke="#F0ECFF" stroke-width="16"></circle>
+            <circle cx="125" cy="125" r="104" fill="none" stroke="#7C63E8" stroke-width="16" stroke-linecap="round" stroke-dasharray="653.5" stroke-dashoffset="190" transform="rotate(-90 125 125)"></circle>
+          </svg>
+          <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div style="font-family: 'Quicksand', sans-serif; font-size: 56px; font-weight: 700; color: #3B3355; line-height: 1;">24:13</div>
+            <div style="font-size: 13px; font-weight: 600; color: #9C93BA; margin-top: 4px;">Pomodoro 3 von 4</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button style="background: #7C63E8; color: #FFFFFF; border: none; border-radius: 14px; padding: 13px 34px; font-size: 16px; font-weight: 700;">Pause</button>
+          <button style="background: #F2EEFF; color: #5A47B8; border: none; border-radius: 14px; padding: 13px 20px; font-size: 16px; font-weight: 700;">Störung +1</button>
+          <button style="background: #FFFFFF; color: #9C93BA; border: 1px solid #E6E1F7; border-radius: 14px; padding: 13px 20px; font-size: 16px; font-weight: 700;">Abbruch</button>
+        </div>
+      </div>
+
+      <!-- Right -->
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 16px;">
+        <div style="background: #FFFFFF; border-radius: 20px; padding: 20px; box-shadow: 0 4px 16px rgba(90, 71, 184, 0.07);">
+          <label for="proj" style="display: block; font-size: 12px; font-weight: 700; color: #9C93BA; margin-bottom: 8px;">Projekt</label>
+          <div style="display: flex; gap: 8px;">
+            <select id="proj" style="flex-grow: 1; font-family: 'Nunito Sans', sans-serif; font-size: 15px; font-weight: 600; color: #3B3355; background: #F7F5FF; border: 1px solid #E6E1F7; border-radius: 12px; padding: 11px 12px;">
+              <option>Rocketz Flying in the Wind</option>
+              <option>GameDevTools</option>
+            </select>
+            <button aria-label="Projekt bearbeiten" style="background: #F2EEFF; color: #5A47B8; border: none; border-radius: 12px; width: 44px; height: 44px; font-size: 16px;">✎</button>
+            <button aria-label="Neues Projekt" style="background: #7C63E8; color: #FFFFFF; border: none; border-radius: 12px; width: 44px; height: 44px; font-size: 20px;">+</button>
+          </div>
+          <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <div style="background: #E4F8F0; color: #1F8C6C; border-radius: 8px; padding: 5px 11px; font-size: 12px; font-weight: 700;">Issue #42</div>
+            <div style="background: #FFF4E3; color: #B07B2E; border-radius: 8px; padding: 5px 11px; font-size: 12px; font-weight: 700;">Classic 25/5/15</div>
+            <div style="background: #F2EEFF; color: #5A47B8; border-radius: 8px; padding: 5px 11px; font-size: 12px; font-weight: 700;">#code</div>
+          </div>
+        </div>
+
+        <div id="kpis" style="display: flex; gap: 14px;"></div>
+
+        <div style="background: #FFFFFF; border-radius: 20px; padding: 20px; box-shadow: 0 4px 16px rgba(90, 71, 184, 0.07); flex-grow: 1;">
+          <div style="font-family: 'Quicksand', sans-serif; font-size: 16px; font-weight: 700; color: #3B3355; margin-bottom: 14px;">Fokus pro Tag</div>
+          <div id="heat" style="display: grid; grid-template-rows: repeat(7, 13px); grid-auto-flow: column; gap: 4px;"></div>
+          <div style="margin-top: 18px; font-family: 'Quicksand', sans-serif; font-size: 16px; font-weight: 700; color: #3B3355; margin-bottom: 10px;">Verteilung</div>
+          <div id="bars"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var i;
+
+    var kpis = [
+        { value: '1 h 45', label: 'Fokus heute' },
+        { value: '87 %', label: 'Abschlussquote' },
+        { value: '1,2', label: 'Ø Störungen' }
+    ];
+    var kpiBox = document.getElementById('kpis');
+    for (i = 0; i < kpis.length; i++) {
+        var k = document.createElement('div');
+        k.style.cssText = 'flex-grow: 1; background: #FFFFFF; border-radius: 18px; padding: 16px; box-shadow: 0 4px 16px rgba(90, 71, 184, 0.06);';
+        k.innerHTML = '<div style="font-family: \'Quicksand\', sans-serif; font-size: 26px; font-weight: 700; color: #3B3355;"></div>' +
+                      '<div style="font-size: 12px; font-weight: 600; color: #9C93BA; margin-top: 2px;"></div>';
+        k.firstChild.textContent = kpis[i].value;
+        k.lastChild.textContent = kpis[i].label;
+        kpiBox.appendChild(k);
+    }
+
+    var pal = ['#F0ECFF', '#DCD2FA', '#BCA9F2', '#9B80EA', '#7C63E8'];
+    var heat = document.getElementById('heat');
+    for (i = 0; i < 105; i++) {
+        var c = document.createElement('div');
+        c.style.cssText = 'width: 13px; height: 13px; border-radius: 4px; background: ' +
+            pal[(i * 5 + (i % 7) * 2 + (i % 13)) % 5] + ';';
+        heat.appendChild(c);
+    }
+
+    var bars = [
+        { label: 'Rocketz', pct: 62, color: '#7C63E8' },
+        { label: 'GameDevTools', pct: 24, color: '#3FC7A6' },
+        { label: 'Admin', pct: 14, color: '#F5A93C' }
+    ];
+    var barBox = document.getElementById('bars');
+    for (i = 0; i < bars.length; i++) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-bottom: 8px;';
+        row.innerHTML =
+            '<div style="width: 130px; font-size: 13px; font-weight: 600; color: #6B6484;">' + bars[i].label + '</div>' +
+            '<div style="flex-grow: 1; height: 10px; border-radius: 999px; background: #F2EEFF;">' +
+            '<div style="height: 10px; border-radius: 999px; width: ' + bars[i].pct + '%; background: ' + bars[i].color + ';"></div></div>' +
+            '<div style="width: 42px; text-align: right; font-size: 13px; font-weight: 700; color: #3B3355;">' + bars[i].pct + ' %</div>';
+        barBox.appendChild(row);
+    }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}Einstellungen{% endblock %}
+
+{% block content %}
+<div class="wrap">
+
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">EINSTELLUNGEN</div>
+      <div class="cg page-title">Dein <em style="font-style: italic;">Rhythmus</em></div>
+    </div>
+    <div class="hand" style="font-size: 19px; color: var(--pomo-muted);">
+      Änderungen gelten sofort — kein Neustart.
+    </div>
+  </div>
+
+  <!-- Benutzer (KONZEPT-BENUTZER.md, 6): jeder mit eigenen Projekten, eigenem
+       Biotop und eigenen Einstellungen. Alles darunter gilt fuer den aktiven. -->
+  <div class="card users-card" id="benutzer" style="margin-top: 26px;">
+    <h3>BENUTZER</h3>
+    <div class="note" style="margin-top: 6px;">
+      Jeder Benutzer hat eigene Projekte, ein eigenes Journal, ein eigenes Biotop
+      und eigene Einstellungen. Ein laufender Timer läuft beim Wechseln weiter.
+    </div>
+
+    <div class="users-list" id="users-list"></div>
+
+    <div class="users-new">
+      <input class="field" id="user-new-name" maxlength="40" placeholder="Name des neuen Benutzers"
+             autocomplete="off">
+      <div class="user-colors" id="user-new-colors"></div>
+      <label class="switch" title="Tagesziel, Tagesbeginn, Überzeit, Biotop-Werte und Presets">
+        <input type="checkbox" id="user-new-copy" checked> EINSTELLUNGEN VON {{ current_user.name | upper }} ÜBERNEHMEN
+      </label>
+      <button class="btn small primary" id="user-new-add">ANLEGEN</button>
+    </div>
+    <div class="note users-hint" id="users-hint" hidden></div>
+
+    <div class="users-ask" id="users-ask" {{ 'hidden' if all_users | length < 2 }}>
+      <label class="switch">
+        <input type="checkbox" id="user-ask" {{ 'checked' if ask_on_start }}> BEIM START FRAGEN, WER ICH BIN
+      </label>
+      <span class="note">Nach jedem Start der App kommt zuerst die Auswahl „Wer bist du?".</span>
+    </div>
+  </div>
+
+  <div class="settings-for cg" style="margin-top: 30px;">
+    Einstellungen für <em>{{ current_user.name }}</em>
+  </div>
+
+  <!-- Tagesziel und Tagesbeginn -->
+  <div class="grid split" style="margin-top: 14px;">
+
+    <div class="card">
+      <h3>TAGESZIEL</h3>
+      <div class="note" style="margin-top: 6px;">
+        Wie viele Pomodoros willst du an einem Arbeitstag schaffen?
+      </div>
+
+      <div class="goal-dots" id="goal-dots" style="width: auto; margin: 18px 0 16px;"></div>
+
+      <div style="display: flex; align-items: center; gap: 18px;">
+        <input type="range" id="goal-range"
+               min="{{ spec.daily_goal_pomodoros.min }}"
+               max="{{ spec.daily_goal_pomodoros.max }}"
+               value="{{ settings.daily_goal_pomodoros }}" style="flex-grow: 1;">
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <input class="field mono" type="number" id="goal-number"
+                 min="{{ spec.daily_goal_pomodoros.min }}"
+                 max="{{ spec.daily_goal_pomodoros.max }}"
+                 value="{{ settings.daily_goal_pomodoros }}"
+                 style="width: 64px; text-align: right; font-size: 20px;">
+          <span class="label">POMODOROS</span>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top: 14px;">
+        Heute geschafft: <span class="mono" style="color: var(--pomo-a2);">{{ summary.pomodoros_today }}</span>.
+        <span id="goal-hint"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>TAGESBEGINN</h3>
+      <div class="note" style="margin-top: 6px;">
+        Ab wann zählt ein neuer Tag? Ohne diesen Versatz zerreißt jede
+        Nachtsession die Tagesstatistik und den Streak um Mitternacht.
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px; margin: 22px 0 6px;">
+        <select class="field cg" id="daystart" style="width: 110px; font-size: 22px;">
+          {% for h in range(spec.day_start_hour.min, spec.day_start_hour.max + 1) %}
+            <option value="{{ h }}" {{ 'selected' if settings.day_start_hour == h }}>
+              {{ '%02d' % h }}:00
+            </option>
+          {% endfor %}
+        </select>
+        <div class="hand" style="font-size: 19px; color: var(--pomo-a3);" id="daystart-hint"></div>
+      </div>
+
+      <div class="note" style="margin-top: 16px;">
+        Wirkt rückwirkend auf die ganze Statistik — es wird nichts umgeschrieben,
+        nur anders gruppiert.
+      </div>
+    </div>
+  </div>
+
+  <!-- Ueberzeit: Nach dem Ablauf zaehlt die Uhr weiter, bis Fertig. -->
+  <div class="card" style="margin-top: 16px;">
+    <h3>ÜBERZEIT</h3>
+    <div class="note" style="margin-top: 6px;">
+      Läuft eine Phase ab, zählt die Uhr aufwärts weiter, bis du auf
+      <i>Fertig</i> klickst. Die Pause danach behält ihre normale Länge.
+    </div>
+
+    <div class="grid split" style="margin-top: 18px; gap: 40px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 18px;">
+          <input type="range" id="ot-reminder"
+                 min="{{ spec.overtime_reminder_min.min }}"
+                 max="{{ spec.overtime_reminder_min.max }}"
+                 value="{{ settings.overtime_reminder_min }}" style="flex-grow: 1;">
+          <div class="cg setting-value" id="ot-reminder-value"></div>
+        </div>
+        <div class="note" style="margin-top: 8px;">
+          Leise Erinnerung während der Überzeit, nur Toast, kein Ton · 0 = aus
+        </div>
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 18px;">
+          <input type="range" id="ot-max"
+                 min="{{ spec.overtime_max_min.min }}"
+                 max="{{ spec.overtime_max_min.max }}" step="5"
+                 value="{{ settings.overtime_max_min }}" style="flex-grow: 1;">
+          <div class="cg setting-value" id="ot-max-value"></div>
+        </div>
+        <div class="note" style="margin-top: 8px;">
+          Obergrenze · danach steht die Uhr, und es kommt die Nachfrage,
+          wie viel davon Arbeit war
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hintergrund: das Biotop des Monats hinter jeder Seite (KONZEPT.md, Abschnitt 13). -->
+  <div class="card" style="margin-top: 16px;">
+    <h3>HINTERGRUND · BIOTOP</h3>
+    <div class="note" style="margin-top: 6px;">
+      Hinter jeder Seite wächst der <a href="/pomodoro/biotop" style="color: var(--pomo-a2);">Garten oder Wald</a>
+      des Monats. Die Änderungen siehst du sofort hier im Hintergrund.
+    </div>
+
+    <div class="grid split" style="margin-top: 18px; gap: 40px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 18px;">
+          <input type="range" id="bio-dim" min="{{ spec.biotop_dim.min }}" max="{{ spec.biotop_dim.max }}"
+                 value="{{ settings.biotop_dim }}" style="flex-grow: 1;">
+          <div class="cg setting-value" id="bio-dim-value"></div>
+        </div>
+        <div class="note" style="margin-top: 8px;">Biotop abdunkeln · damit Uhr und Zahlen lesbar bleiben</div>
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 18px;">
+          <input type="range" id="bio-veil" min="{{ spec.biotop_veil.min }}" max="{{ spec.biotop_veil.max }}"
+                 value="{{ settings.biotop_veil }}" style="flex-grow: 1;">
+          <div class="cg setting-value" id="bio-veil-value"></div>
+        </div>
+        <div class="note" style="margin-top: 8px;">
+          Projektschleier · das weichgezeichnete Projektbild über dem Biotop, 0 = aus
+          {% if not (project and project.has_image) %}<br>Das aktuelle Projekt hat kein Bild, deshalb ist hier gerade kein Schleier zu sehen.{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="grid split" style="margin-top: 18px; gap: 40px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 18px;">
+          <input type="range" id="bio-cards" min="{{ spec.biotop_cards.min }}" max="{{ spec.biotop_cards.max }}"
+                 value="{{ settings.biotop_cards }}" style="flex-grow: 1;">
+          <div class="cg setting-value" id="bio-cards-value"></div>
+        </div>
+        <div class="note" style="margin-top: 8px;">
+          Deckkraft der Blöcke · auf Journal, Statistik, Projekte und Einstellungen,
+          weniger heißt: mehr Biotop scheint durch
+        </div>
+      </div>
+    </div>
+    <div style="margin-top: 18px;">
+      <label class="switch"><input type="checkbox" id="bio-anim" {{ 'checked' if settings.biotop_anim }}> ANIMATIONEN</label>
+      <span class="note" style="margin-left: 12px;">Aus: Das Biotop bleibt ein ruhiges Standbild.</span>
+    </div>
+  </div>
+
+  <!-- Presets -->
+  <div class="page-head" style="margin-top: 38px;">
+    <div>
+      <div class="eyebrow">PHASENLÄNGEN</div>
+      <div class="cg" style="font-size: 30px; font-weight: 300;">Presets</div>
+    </div>
+    <button class="btn small primary" id="add-preset">NEUES PRESET</button>
+  </div>
+
+  <div class="note" style="margin-top: 10px; max-width: 760px;">
+    Arbeitsphase, kurze und lange Pause, und nach wie vielen Arbeitsphasen die
+    lange Pause kommt. Der Balken darunter zeigt einen vollen Zyklus
+    maßstäblich — so sieht man sofort, was die Zahlen bedeuten.
+  </div>
+
+  <div id="presets" style="margin-top: 18px; display: flex; flex-direction: column; gap: 14px;"></div>
+
+  <div class="note" style="margin-top: 22px;">
+    Das Standard-Preset ist beim Start vorausgewählt und lässt sich nicht löschen.
+  </div>
+</div>
+
+<script id="preset-data" type="application/json">{{ presets | tojson }}</script>
+<script id="user-colors" type="application/json">{{ user_colors | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pomodoro_settings.js') }}"></script>
+{% endblock %}

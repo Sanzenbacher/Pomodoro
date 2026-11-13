@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Pomodoro-Mockup — Sehr verspielt</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Nunito', sans-serif; background: #D9CFBC; display: flex; justify-content: center; padding: 24px; }
+  a { color: #D93B18; }
+  .frame { width: 1280px; height: 860px; background: #FFF7E8; display: flex; overflow: hidden; position: relative; border-radius: 6px; }
+  button { font-family: 'Fredoka', sans-serif; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <div style="position: absolute; top: -60px; right: 180px; width: 220px; height: 220px; border-radius: 50%; background: #FFE29A;"></div>
+  <div style="position: absolute; bottom: -70px; right: -40px; width: 260px; height: 260px; border-radius: 50%; background: #C9F0E2;"></div>
+
+  <!-- Main -->
+  <div style="flex-grow: 1; padding: 26px 30px; display: flex; flex-direction: column; gap: 18px; position: relative; z-index: 2;">
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+      <div>
+        <div style="font-family: 'Fredoka', sans-serif; font-size: 40px; font-weight: 700; color: #2B2118; line-height: 1;">Pomodoro-Zeit!</div>
+        <div style="font-size: 15px; font-weight: 700; color: #8A7461; margin-top: 6px;">Noch 4 bis zum Tagesziel — du schaffst das</div>
+      </div>
+      <div style="transform: rotate(6deg); background: #6C7BFF; color: #FFF7E8; border: 3px solid #2B2118; border-radius: 16px; padding: 8px 16px; font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 16px; box-shadow: 4px 4px 0 #2B2118;">Streak: 6 Tage</div>
+    </div>
+
+    <div style="display: flex; gap: 20px; align-items: stretch;">
+
+      <!-- Timer -->
+      <div style="width: 452px; flex-shrink: 0; background: #FFFFFF; border: 4px solid #2B2118; border-radius: 30px; box-shadow: 7px 7px 0 #2B2118; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 14px;">
+        <div style="background: #FFC94A; border: 3px solid #2B2118; border-radius: 999px; padding: 5px 18px; font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 15px; color: #2B2118;">FOKUS · Pomodoro 3 von 4</div>
+
+        <div style="position: relative; width: 268px; height: 268px;">
+          <svg width="268" height="268" viewBox="0 0 268 268" aria-hidden="true">
+            <circle cx="134" cy="134" r="112" fill="#FFF1D6" stroke="#2B2118" stroke-width="5"></circle>
+            <circle cx="134" cy="134" r="112" fill="none" stroke="#FF5A3C" stroke-width="20" stroke-linecap="round" stroke-dasharray="703.7" stroke-dashoffset="204" transform="rotate(-90 134 134)"></circle>
+            <circle cx="134" cy="134" r="92" fill="#FFFFFF" stroke="#2B2118" stroke-width="4"></circle>
+          </svg>
+          <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div style="font-family: 'Fredoka', sans-serif; font-size: 62px; font-weight: 700; color: #2B2118; line-height: 1;">24:13</div>
+            <div style="font-size: 13px; font-weight: 800; color: #8A7461; letter-spacing: 0.08em;">VON 25 MIN</div>
+          </div>
+          <div style="position: absolute; top: 4px; right: -6px; width: 56px; height: 56px; border-radius: 50%; background: #FF5A3C; border: 4px solid #2B2118; display: flex; align-items: center; justify-content: center;">
+            <svg width="30" height="20" viewBox="0 0 30 20" aria-hidden="true">
+              <circle cx="9" cy="6" r="3" fill="#2B2118"></circle>
+              <circle cx="21" cy="6" r="3" fill="#2B2118"></circle>
+              <path d="M8 13 Q15 19 22 13" stroke="#2B2118" stroke-width="3" fill="none" stroke-linecap="round"></path>
+            </svg>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; width: 100%; justify-content: center;">
+          <button style="background: #FF5A3C; color: #FFF7E8; border: 4px solid #2B2118; border-radius: 18px; padding: 13px 30px; font-size: 18px; font-weight: 700; box-shadow: 0 5px 0 #2B2118;">Pause</button>
+          <button style="background: #FFFFFF; color: #2B2118; border: 4px solid #2B2118; border-radius: 18px; padding: 13px 20px; font-size: 18px; font-weight: 700; box-shadow: 0 5px 0 #2B2118;">Störung +1</button>
+          <button style="background: #FFFFFF; color: #8A7461; border: 4px solid #2B2118; border-radius: 18px; padding: 13px 20px; font-size: 18px; font-weight: 700; box-shadow: 0 5px 0 #2B2118;">Abbruch</button>
+        </div>
+      </div>
+
+      <!-- Right -->
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 16px;">
+
+        <div style="background: #FFFFFF; border: 4px solid #2B2118; border-radius: 24px; box-shadow: 6px 6px 0 #2B2118; padding: 18px;">
+          <label for="proj" style="display: block; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: #8A7461; margin-bottom: 8px;">WORAN ARBEITEST DU?</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="proj" style="flex-grow: 1; font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 700; color: #2B2118; background: #FFF1D6; border: 3px solid #2B2118; border-radius: 14px; padding: 10px 12px;">
+              <option>Rocketz Flying in the Wind</option>
+              <option>GameDevTools</option>
+            </select>
+            <button aria-label="Projekt bearbeiten" style="background: #FFC94A; border: 3px solid #2B2118; border-radius: 14px; width: 44px; height: 44px; font-size: 18px; font-weight: 700;">✎</button>
+            <button aria-label="Neues Projekt" style="background: #3FC7A6; border: 3px solid #2B2118; border-radius: 14px; width: 44px; height: 44px; font-size: 22px; font-weight: 700;">+</button>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+            <div style="background: #6C7BFF; color: #FFF7E8; border: 3px solid #2B2118; border-radius: 999px; padding: 4px 14px; font-size: 13px; font-weight: 800;">Issue #42 Water flow</div>
+            <div style="background: #FFF1D6; color: #2B2118; border: 3px solid #2B2118; border-radius: 999px; padding: 4px 14px; font-size: 13px; font-weight: 800;">Classic 25/5/15</div>
+          </div>
+        </div>
+
+        <div style="background: #FFFFFF; border: 4px solid #2B2118; border-radius: 24px; box-shadow: 6px 6px 0 #2B2118; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px;">
+            <div style="font-family: 'Fredoka', sans-serif; font-size: 19px; font-weight: 700; color: #2B2118;">Tagesziel</div>
+            <div style="font-family: 'Fredoka', sans-serif; font-size: 19px; font-weight: 700; color: #D93B18;">4 / 8</div>
+          </div>
+          <div id="goal" style="display: flex; gap: 7px;"></div>
+        </div>
+
+        <div style="background: #FFFFFF; border: 4px solid #2B2118; border-radius: 24px; box-shadow: 6px 6px 0 #2B2118; padding: 18px; flex-grow: 1;">
+          <div style="font-family: 'Fredoka', sans-serif; font-size: 19px; font-weight: 700; color: #2B2118; margin-bottom: 12px;">Deine letzten Wochen</div>
+          <div id="heat" style="display: grid; grid-template-rows: repeat(7, 15px); grid-auto-flow: column; gap: 4px;"></div>
+          <div style="display: flex; gap: 16px; margin-top: 14px;">
+            <div><div style="font-family: 'Fredoka', sans-serif; font-size: 24px; font-weight: 700; color: #2B2118;">1 h 45</div><div style="font-size: 12px; font-weight: 800; color: #8A7461;">FOKUS HEUTE</div></div>
+            <div><div style="font-family: 'Fredoka', sans-serif; font-size: 24px; font-weight: 700; color: #2B2118;">87 %</div><div style="font-size: 12px; font-weight: 800; color: #8A7461;">GESCHAFFT</div></div>
+            <div><div style="font-family: 'Fredoka', sans-serif; font-size: 24px; font-weight: 700; color: #2B2118;">1,2</div><div style="font-size: 12px; font-weight: 800; color: #8A7461;">Ø STÖRUNGEN</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var i;
+
+    var goal = document.getElementById('goal');
+    for (i = 0; i < 8; i++) {
+        var g = document.createElement('div');
+        g.style.cssText = 'flex-grow: 1; height: 26px; border: 3px solid #2B2118; border-radius: 9px; background: ' +
+            (i < 4 ? '#FF5A3C' : '#FFF1D6') + ';';
+        goal.appendChild(g);
+    }
+
+    var pal = ['#F2E7D5', '#FFE29A', '#FFC94A', '#FF8A5C', '#FF5A3C'];
+    var heat = document.getElementById('heat');
+    for (i = 0; i < 98; i++) {
+        var c = document.createElement('div');
+        c.style.cssText = 'width: 15px; height: 15px; border-radius: 6px; background: ' +
+            pal[(i * 7 + (i % 5) * 3 + (i % 11)) % 5] + ';';
+        heat.appendChild(c);
+    }
+})();
+</script>
+</body>
+</html>

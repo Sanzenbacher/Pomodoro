@@ -1,0 +1,105 @@
+/* Gemeinsame Gestaltung der Biotop-Mockups: Variante 08 wie in
+   static/css/pomodoro.css, Standardpalette. In der App kommen die Farben
+   pro Projekt aus dem Bild. */
+
+:root {
+  --pomo-bg: #151020;
+  --pomo-surface: #1C1528;
+  --pomo-ink: #F6EDE7;
+  --pomo-muted: #A09CAB;
+  --pomo-line: #2F2A3B;
+  --pomo-a1: #FF9679;
+  --pomo-a2: #F6C177;
+  --pomo-a3: #7BD6BE;
+  --pomo-a4: #B48DF0;
+  --pomo-warn: #F06D8B;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { font-family: 'Jost', system-ui, sans-serif; background: var(--pomo-bg); color: var(--pomo-ink); min-height: 100vh; }
+button, select, input { font-family: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+.cg { font-family: 'Cormorant Garamond', Georgia, serif; }
+.hand { font-family: 'Caveat', cursive; }
+.eyebrow { font-size: 10px; letter-spacing: .36em; color: var(--pomo-a3); }
+.label { font-size: 10px; letter-spacing: .26em; color: var(--pomo-muted); }
+.muted { color: var(--pomo-muted); }
+
+/* Leiste nur fuer das Mockup, nicht Teil der App */
+.mock-bar {
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  padding: 9px 20px; background: #0B0812; border-bottom: 1px dashed #3a3350;
+  font-size: 12px; color: #8a8597; position: relative; z-index: 5;
+}
+.mock-bar b { color: var(--pomo-a2); font-weight: 500; letter-spacing: .14em; }
+.mock-bar select, .mock-bar button { background: #1C1528; border: 1px solid #3a3350; border-radius: 4px; padding: 4px 8px; font-size: 12px; color: var(--pomo-ink); }
+.mock-bar a { color: var(--pomo-a3); margin-left: auto; }
+.mock-bar label { display: inline-flex; gap: 6px; align-items: center; }
+.mock-bar input[type=range] { width: 110px; accent-color: var(--pomo-a1); }
+
+#pomo-root { position: relative; min-height: 100vh; overflow-x: hidden; }
+.veil {
+  position: fixed; inset: -60px; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(circle at 25% 35%, #FF9679 0, transparent 38%),
+    radial-gradient(circle at 70% 25%, #B48DF0 0, transparent 40%),
+    radial-gradient(circle at 60% 80%, #7BD6BE 0, transparent 35%);
+  filter: blur(52px) saturate(1.2); opacity: .22;
+}
+.scrim { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at 28% 45%, rgba(0,0,0,0) 0%, rgba(0,0,0,.6) 70%); }
+
+.topbar { position: relative; z-index: 2; display: flex; align-items: center; gap: 30px; padding: 16px 40px; border-bottom: 1px solid var(--pomo-line); }
+.wordmark { display: flex; align-items: baseline; gap: 8px; }
+.wordmark .cg { font-size: 22px; }
+.atelier { font-size: 9px; letter-spacing: .4em; color: var(--pomo-a1); }
+.topbar nav { display: flex; gap: 24px; }
+.topbar nav a { font-size: 11px; letter-spacing: .22em; color: var(--pomo-muted); padding-bottom: 4px; border-bottom: 1px solid transparent; }
+.topbar nav a.on { color: var(--pomo-ink); border-bottom-color: var(--pomo-a1); }
+.mini { margin-left: auto; display: flex; align-items: center; gap: 10px; padding: 6px 12px; border: 1px solid var(--pomo-line); border-radius: 999px; }
+.mini .t { font-size: 15px; font-variant-numeric: tabular-nums; }
+.mini .l { font-size: 9px; letter-spacing: .2em; color: var(--pomo-muted); }
+
+main.wrap { position: relative; z-index: 2; max-width: 1240px; margin: 0 auto; padding: 30px 40px 70px; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.page-title { font-size: 38px; font-weight: 300; }
+
+.btn {
+  font-size: 11px; letter-spacing: .22em; background: transparent; color: var(--pomo-ink);
+  border: 1px solid var(--pomo-line); padding: 10px 18px; border-radius: 2px; transition: border-color .3s;
+}
+.btn:hover { border-color: var(--pomo-a1); }
+.btn.primary { background: linear-gradient(100deg, var(--pomo-a1), var(--pomo-a2)); color: var(--pomo-bg); border: none; padding: 12px 26px; font-weight: 500; }
+.btn.small { padding: 7px 12px; font-size: 10px; }
+.textbtn { background: none; border: none; font-size: 11px; letter-spacing: .2em; color: var(--pomo-a2); }
+
+.seg { display: inline-flex; border: 1px solid var(--pomo-line); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { background: none; border: none; font-size: 11px; letter-spacing: .2em; padding: 7px 16px; border-radius: 999px; color: var(--pomo-muted); }
+.seg button.on { background: var(--pomo-a1); color: var(--pomo-bg); }
+.seg.locked button:not(.on) { opacity: .35; cursor: not-allowed; }
+
+.card { background: var(--pomo-surface); border: 1px solid var(--pomo-line); border-radius: 6px; padding: 18px 20px; }
+.card h3 { font-size: 10px; letter-spacing: .26em; font-weight: 400; color: var(--pomo-muted); }
+.card .big { font-size: 34px; font-weight: 300; line-height: 1.1; margin-top: 10px; }
+.card .note { font-size: 11.5px; color: var(--pomo-muted); margin-top: 4px; }
+.grid { display: grid; gap: 16px; }
+.grid.k4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid.split { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .grid.k4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid.split { grid-template-columns: 1fr; } .topbar { flex-wrap: wrap; padding: 14px 18px; } main.wrap { padding: 24px 18px 60px; } }
+
+input[type=range] { accent-color: var(--pomo-a1); }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: .22em; color: var(--pomo-muted); cursor: pointer; }
+.switch input { appearance: none; width: 30px; height: 16px; border-radius: 999px; background: var(--pomo-line); position: relative; cursor: pointer; transition: background .2s; }
+.switch input::after { content: ''; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--pomo-muted); transition: left .2s, background .2s; }
+.switch input:checked { background: color-mix(in srgb, var(--pomo-a3) 45%, transparent); }
+.switch input:checked::after { left: 16px; background: var(--pomo-a3); }
+
+.pill { display: inline-block; font-size: 10px; letter-spacing: .1em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--pomo-line); color: var(--pomo-muted); }
+.pill.ok { color: var(--pomo-a3); border-color: var(--pomo-a3); }
+.pill.warm { color: var(--pomo-a2); border-color: var(--pomo-a2); }
+
+.icon { width: 46px; height: 46px; flex: none; border-radius: 6px; background: #2a3a22; display: block; }
+.prog { height: 3px; background: var(--pomo-line); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+.prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--pomo-a3), var(--pomo-a2)); }

@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Pomodoro-Mockup — Überzeit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=Caveat:wght@500;600&display=swap">
+<style>
+  /* Farbwerte = Standardpalette aus static/css/pomodoro.css.
+     In der App kommen sie pro Projekt aus dem Bild; die Überzeit nutzt
+     ausschließlich vorhandene Rollen (a2 für Überzeit), keine neue Farbe. */
+  :root {
+    --pomo-bg: #151020;
+    --pomo-surface: #1C1528;
+    --pomo-ink: #F6EDE7;
+    --pomo-muted: #A09CAB;
+    --pomo-line: #2F2A3B;
+    --pomo-a1: #FF9679;
+    --pomo-a2: #F6C177;
+    --pomo-a3: #7BD6BE;
+    --pomo-a4: #B48DF0;
+    --pomo-warn: #F06D8B;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Jost', system-ui, sans-serif;
+    background: #0E0A16; color: var(--pomo-ink);
+    padding: 40px 24px 90px;
+  }
+  button { font-family: inherit; color: inherit; cursor: pointer; }
+
+  .page { width: 1280px; margin: 0 auto; }
+  .cg { font-family: 'Cormorant Garamond', Georgia, serif; }
+  .hand { font-family: 'Caveat', cursive; }
+  .eyebrow { font-size: 10px; letter-spacing: .36em; color: var(--pomo-a3); }
+  .label { font-size: 10px; letter-spacing: .26em; color: var(--pomo-muted); }
+  .rule { height: 1px; background: var(--pomo-line); }
+  .ot { color: var(--pomo-a2); }
+
+  /* Dokumentkopf */
+  .doc-head { margin-bottom: 34px; }
+  .doc-head h1 { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 50px; line-height: 1; }
+  .doc-head h1 em {
+    font-style: italic;
+    background: linear-gradient(94deg, var(--pomo-a1), var(--pomo-a2) 55%, var(--pomo-a4));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .doc-head p { color: var(--pomo-muted); font-size: 15px; font-weight: 300; margin-top: 12px; max-width: 760px; line-height: 1.6; }
+
+  .section { margin-top: 64px; }
+  .section-title { display: flex; align-items: baseline; gap: 16px; margin-bottom: 18px; }
+  .section-title .num { font-family: 'Cormorant Garamond', serif; font-size: 30px; color: var(--pomo-a1); font-variant-numeric: lining-nums; }
+  .section-title h2 { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 28px; }
+  .section-title .hint { font-size: 12px; letter-spacing: .08em; color: var(--pomo-muted); font-weight: 300; }
+
+  .note { font-family: 'Caveat', cursive; font-size: 20px; color: var(--pomo-a3); line-height: 1.2; }
+  .note::before { content: '— '; }
+
+  /* App-Rahmen */
+  .frame {
+    position: relative; background: var(--pomo-bg); border: 1px solid var(--pomo-line);
+    border-radius: 6px; overflow: hidden;
+  }
+  .frame::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 28% 45%, rgba(255,150,121,.06) 0%, rgba(0,0,0,0) 55%);
+  }
+
+  .topbar {
+    display: flex; align-items: center; gap: 30px;
+    padding: 16px 40px; border-bottom: 1px solid var(--pomo-line);
+  }
+  .wordmark { display: flex; align-items: baseline; gap: 9px; }
+  .wordmark .cg { font-size: 22px; }
+  .atelier { font-size: 9px; letter-spacing: .4em; color: var(--pomo-a1); }
+  .topbar nav { display: flex; gap: 22px; }
+  .topbar nav span { font-size: 11px; letter-spacing: .22em; color: var(--pomo-muted); padding: 4px 0; }
+  .topbar nav span.on { color: var(--pomo-ink); border-bottom: 1px solid var(--pomo-a1); }
+  .spacer { flex-grow: 1; }
+
+  .mini {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 7px 16px 7px 12px; border-radius: 999px; border: 1px solid var(--pomo-line);
+  }
+  .mini .t { font-family: 'Cormorant Garamond', serif; font-size: 19px; line-height: 1; }
+  .mini .l { font-size: 9px; letter-spacing: .2em; color: var(--pomo-muted); }
+  .mini.over { border-color: rgba(246,193,119,.45); animation: breathe 3.2s ease-in-out infinite; }
+  .mini.over .t, .mini.over .l { color: var(--pomo-a2); }
+  .mini.capped .t { color: var(--pomo-muted); }
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(246,193,119,0); }
+    50% { box-shadow: 0 0 0 5px rgba(246,193,119,.10); }
+  }
+
+  .btn {
+    border-radius: 999px; padding: 13px 24px; font-size: 12px; font-weight: 300;
+    letter-spacing: .22em; background: transparent; color: var(--pomo-ink);
+    border: 1px solid var(--pomo-line);
+  }
+  .btn.primary {
+    background: linear-gradient(100deg, var(--pomo-a1), var(--pomo-a2));
+    color: var(--pomo-bg); border: none; padding: 13px 34px; font-weight: 500;
+  }
+  .btn.ghost { border-color: var(--pomo-a4); }
+  .btn.quiet { color: var(--pomo-muted); }
+
+  /* Timerseite */
+  .stage { display: flex; position: relative; z-index: 1; }
+  .timer-pane { width: 740px; flex-shrink: 0; padding: 36px 52px 40px; border-right: 1px solid var(--pomo-line); }
+  .stats-pane { flex-grow: 1; padding: 34px 38px; display: flex; flex-direction: column; gap: 20px; }
+  .headline { font-size: 46px; font-weight: 300; line-height: 1.05; margin-top: 8px; }
+  .headline em {
+    font-style: italic;
+    background: linear-gradient(94deg, var(--pomo-a2), var(--pomo-a1));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .ring-row { display: flex; align-items: center; gap: 30px; margin-top: 24px; }
+  .ring { position: relative; width: 340px; height: 340px; flex-shrink: 0; }
+  .ring-face { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-time { font-size: 92px; font-weight: 300; line-height: .9; letter-spacing: -.03em; }
+  .ring-sub { font-size: 22px; color: var(--pomo-muted); margin-top: 8px; }
+  .meta { display: flex; flex-direction: column; gap: 22px; }
+  .meta-value { font-size: 30px; font-weight: 300; }
+  .goal-dots { display: flex; flex-wrap: wrap; gap: 8px; width: 92px; margin-top: 9px; }
+  .goal-dots div { width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--pomo-line); }
+  .goal-dots div.on { background: linear-gradient(120deg, var(--pomo-a1), var(--pomo-a2)); border-color: transparent; }
+  .goal-dots div.pending { border-color: var(--pomo-a2); border-style: dashed; }
+  .controls { display: flex; gap: 11px; margin-top: 30px; flex-wrap: wrap; }
+  .quote-row { display: flex; align-items: center; gap: 16px; margin-top: 26px; }
+  .quote-row .dash { width: 40px; height: 1px; background: var(--pomo-a3); }
+  .quote-row .hand { font-size: 21px; color: var(--pomo-a3); }
+
+  .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 20px; }
+  .kpi-value { font-size: 40px; font-weight: 300; line-height: 1; }
+  .kpi-new { position: relative; }
+  .kpi-new .badge {
+    position: absolute; top: -6px; right: 12px; font-size: 9px; letter-spacing: .2em;
+    color: var(--pomo-bg); background: var(--pomo-a2); padding: 2px 7px; border-radius: 999px;
+  }
+
+  /* Zustandsleiste */
+  .states { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; }
+  .state {
+    position: relative; padding: 26px 22px 24px; border: 1px solid var(--pomo-line);
+    background: var(--pomo-bg); display: flex; flex-direction: column; align-items: center; text-align: center;
+  }
+  .state + .state { border-left: none; }
+  .state:first-child { border-radius: 6px 0 0 6px; }
+  .state:last-child { border-radius: 0 6px 6px 0; }
+  .state .arrow {
+    position: absolute; right: -13px; top: 86px; z-index: 2; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--pomo-surface); border: 1px solid var(--pomo-line);
+    display: flex; align-items: center; justify-content: center; color: var(--pomo-muted); font-size: 13px;
+  }
+  .sring { position: relative; width: 132px; height: 132px; margin: 14px 0 12px; }
+  .sring .face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .sring .face span { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; }
+  .state .what { font-size: 13px; font-weight: 300; line-height: 1.5; color: var(--pomo-muted); max-width: 230px; }
+  .state .what b { color: var(--pomo-ink); font-weight: 400; }
+  .state code { font-size: 11px; color: var(--pomo-a4); letter-spacing: .04em; }
+
+  /* Overlays */
+  .overlays { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .ov {
+    background: color-mix(in srgb, var(--pomo-bg) 88%, black); border: 1px solid var(--pomo-line);
+    border-radius: 6px; padding: 34px 26px 30px; text-align: center; display: flex; flex-direction: column; align-items: center;
+  }
+  .ov .title { font-family: 'Cormorant Garamond', serif; font-size: 44px; font-weight: 300; line-height: 1.05; margin: 10px 0 6px; }
+  .ov .hand { font-size: 22px; color: var(--pomo-a3); }
+  .ov .actions { display: flex; gap: 9px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
+  .ov .btn { padding: 11px 18px; font-size: 11px; letter-spacing: .18em; }
+  .ov .btn.primary { padding: 11px 22px; }
+  .ov .caption { margin-top: 22px; }
+  .chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+  .chip {
+    border-radius: 999px; padding: 8px 15px; font-size: 12px; font-weight: 300; letter-spacing: .06em;
+    background: transparent; border: 1px solid var(--pomo-line); color: var(--pomo-ink);
+  }
+  .chip.on { border-color: var(--pomo-a2); color: var(--pomo-a2); background: rgba(246,193,119,.08); }
+  .stars { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+  .stars button { width: 36px; height: 36px; border-radius: 50%; background: transparent; border: 1px solid var(--pomo-line); font-size: 13px; }
+  .stars button.on { background: var(--pomo-a2); border-color: var(--pomo-a2); color: var(--pomo-bg); }
+
+  .pick { width: 100%; margin-top: 20px; text-align: left; padding: 16px; border: 1px dashed var(--pomo-line); border-radius: 6px; }
+  .pick-track { position: relative; height: 26px; margin-top: 12px; }
+  .pick-track .bar { position: absolute; top: 12px; left: 0; right: 0; height: 2px; background: var(--pomo-line); }
+  .pick-track .plan { position: absolute; top: 12px; left: 0; width: 29.4%; height: 2px; background: linear-gradient(90deg, var(--pomo-a1), var(--pomo-a2)); }
+  .pick-track .over { position: absolute; top: 12px; left: 29.4%; width: 21.2%; height: 2px; background: var(--pomo-a2); }
+  .pick-track .knob { position: absolute; top: 6px; left: 50.6%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--pomo-a2); box-shadow: 0 0 12px rgba(246,193,119,.7); }
+  .pick-track .tick { position: absolute; top: 7px; left: 29.4%; width: 1px; height: 12px; background: var(--pomo-ink); opacity: .55; }
+  .pick-scale { position: relative; height: 14px; font-size: 10px; letter-spacing: .14em; color: var(--pomo-muted); }
+  .pick-scale span { position: absolute; top: 0; white-space: nowrap; }
+  .pick-scale .s { left: 0; }
+  .pick-scale .m { left: 29.4%; transform: translateX(-50%); }
+  .pick-scale .e { right: 0; }
+
+  /* Peripherie */
+  .peri { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .card { background: var(--pomo-bg); border: 1px solid var(--pomo-line); border-radius: 6px; padding: 24px 26px; }
+  .card .label { margin-bottom: 14px; }
+  .mini-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .mini-row .cap { font-size: 12px; font-weight: 300; color: var(--pomo-muted); width: 118px; flex-shrink: 0; }
+
+  .tabbar { display: flex; gap: 2px; background: #0B0812; padding: 8px 8px 0; border-radius: 6px 6px 0 0; border: 1px solid var(--pomo-line); border-bottom: none; }
+  .tab { padding: 9px 16px; font-size: 12.5px; border-radius: 6px 6px 0 0; color: var(--pomo-muted); max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tab.on { background: var(--pomo-bg); color: var(--pomo-ink); }
+  .tab.on .ot { font-variant-numeric: tabular-nums; }
+  .tabbody { border: 1px solid var(--pomo-line); border-top: none; border-radius: 0 0 6px 6px; height: 16px; background: var(--pomo-bg); }
+
+  .notif {
+    display: flex; gap: 14px; padding: 16px 18px; border-radius: 8px;
+    background: #231C30; border: 1px solid #3A3248; box-shadow: 0 14px 34px rgba(0,0,0,.4); max-width: 420px;
+  }
+  .notif .ico { width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0; background: linear-gradient(135deg, var(--pomo-a1), var(--pomo-a2)); }
+  .notif .app { font-size: 11px; color: var(--pomo-muted); letter-spacing: .04em; }
+  .notif .nt { font-size: 14px; font-weight: 500; margin-top: 3px; }
+  .notif .nb { font-size: 13px; font-weight: 300; color: #CFC8D6; margin-top: 2px; }
+
+  .setting { display: grid; grid-template-columns: 1fr 90px; gap: 6px 18px; align-items: center; margin-bottom: 18px; }
+  .setting .v { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 300; text-align: right; }
+  .range { position: relative; height: 14px; grid-column: 1 / 2; }
+  .range .track { position: absolute; top: 6px; left: 0; right: 0; height: 2px; background: var(--pomo-line); }
+  .range .fill { position: absolute; top: 6px; left: 0; height: 2px; background: var(--pomo-a1); }
+  .range .dot { position: absolute; top: 0; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--pomo-a1); }
+  .setting .sub { grid-column: 1 / 3; font-size: 12px; font-weight: 300; color: var(--pomo-muted); }
+
+  /* Statistik */
+  .stat-grid { display: grid; grid-template-columns: 420px 1fr; gap: 20px; align-items: start; }
+  .bars { display: flex; align-items: flex-end; gap: 14px; height: 150px; margin-top: 8px; padding: 0 4px; }
+  .bars .col { flex-grow: 1; display: flex; flex-direction: column-reverse; align-items: stretch; }
+  .bars .p { background: linear-gradient(180deg, var(--pomo-a1), var(--pomo-a4)); border-radius: 0 0 2px 2px; opacity: .85; }
+  .bars .o { background: var(--pomo-a2); border-radius: 2px 2px 0 0; }
+  .days { display: flex; gap: 14px; padding: 0 4px; margin-top: 8px; }
+  .days span { flex-grow: 1; text-align: center; font-size: 10px; letter-spacing: .16em; color: var(--pomo-muted); }
+  .legend { display: flex; gap: 18px; margin-top: 16px; font-size: 11px; letter-spacing: .12em; color: var(--pomo-muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
+
+  .kpi-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .kpi-strip .kpi-value { font-size: 34px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-weight: 300; }
+  th { text-align: left; font-size: 10px; font-weight: 400; letter-spacing: .2em; color: var(--pomo-muted); padding: 0 10px 10px; border-bottom: 1px solid var(--pomo-line); }
+  td { padding: 11px 10px; border-bottom: 1px solid rgba(47,42,59,.6); }
+  td.num { font-variant-numeric: tabular-nums; }
+  td .plus { color: var(--pomo-a2); margin-left: 6px; }
+  td .plus.small { color: var(--pomo-muted); }
+  .tag { font-size: 11px; letter-spacing: .06em; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--pomo-line); white-space: nowrap; }
+  .tag.flow { border-color: rgba(123,214,190,.5); color: var(--pomo-a3); }
+  .tag.unnoticed { border-color: rgba(240,109,139,.5); color: var(--pomo-warn); }
+  .tag.finishing { border-color: rgba(180,141,240,.5); color: var(--pomo-a4); }
+  .tag.chosen { color: var(--pomo-muted); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="doc-head">
+    <div class="eyebrow">MOCKUP 11 · ERWEITERUNG VON VARIANTE 08</div>
+    <h1 style="margin-top: 12px;">Über die <em>Zeit</em> hinaus</h1>
+    <p>
+      Läuft die Arbeitsphase ab, endet die Sitzung nicht — die Uhr zählt ab dort aufwärts,
+      bis du auf <i>Fertig</i> klickst. Gemessen wird das in der App heute schon, nur unsichtbar:
+      <code>actual_seconds</code> enthält die Zeit bereits, die Anzeige steht aber bei 00:00.
+      Die Zahlen sind Platzhalter; Konzept in <code>KONZEPT.md</code>, Abschnitt 6.
+    </p>
+  </div>
+
+  <!-- ============================================================ 1 -->
+  <div class="section" style="margin-top: 0;">
+    <div class="section-title">
+      <span class="num">1</span><h2>Die Timerseite in Überzeit</h2>
+      <span class="hint">Zustand <code>finished</code> · 3 Min 42 s nach dem geplanten Ende</span>
+    </div>
+
+    <div class="frame">
+      <div class="topbar">
+        <div class="wordmark"><span class="cg">GameDev</span><span class="atelier">ATELIER</span></div>
+        <nav>
+          <span class="on">TIMER</span><span>STATISTIK</span><span>PROJEKTE</span><span>EINSTELLUNGEN</span>
+        </nav>
+        <div class="spacer"></div>
+        <div class="mini over">
+          <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+            <circle cx="13" cy="13" r="10.5" fill="none" stroke="var(--pomo-line)" stroke-width="3"></circle>
+            <circle cx="13" cy="13" r="10.5" fill="none" stroke="var(--pomo-a2)" stroke-width="3" stroke-linecap="round"
+                    stroke-dasharray="9.76 65.97" transform="rotate(-90 13 13)"></circle>
+          </svg>
+          <span class="t">+03:42</span><span class="l">ÜBERZEIT</span>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="timer-pane">
+          <div class="eyebrow" style="color: var(--pomo-a2);">ÜBERZEIT · ARBEITSPHASE · SITZUNG 3</div>
+          <div class="cg headline">Über die <em>Zeit</em></div>
+
+          <div class="ring-row">
+            <div class="ring">
+              <svg width="340" height="340" viewBox="0 0 340 340" aria-hidden="true">
+                <defs>
+                  <linearGradient id="arc" x1="0" y1="1" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#B48DF0"></stop>
+                    <stop offset="45%" stop-color="#FF9679"></stop>
+                    <stop offset="100%" stop-color="#F6C177"></stop>
+                  </linearGradient>
+                </defs>
+                <!-- Außenbahn: heute nur Zierde, in Überzeit die Spur der Mehrzeit -->
+                <circle cx="170" cy="170" r="163" fill="none" stroke="var(--pomo-line)" stroke-width="1" stroke-dasharray="2 7"></circle>
+                <!-- Innenring: Plan erfüllt, als Schatten des vollen Bogens -->
+                <circle cx="170" cy="170" r="150" fill="none" stroke="var(--pomo-line)" stroke-width="10"></circle>
+                <circle cx="170" cy="170" r="150" fill="none" stroke="url(#arc)" stroke-width="10" opacity=".2"></circle>
+                <circle cx="170" cy="170" r="137" fill="none" stroke="var(--pomo-a3)" stroke-width="1.5"
+                        stroke-dasharray="118 640" opacity=".5" transform="rotate(-64 170 170)"></circle>
+                <!-- Überzeit: 3:42 von 25:00 = 14,8 % einer Runde auf r = 163 -->
+                <line x1="170" y1="0" x2="170" y2="15" stroke="var(--pomo-ink)" stroke-width="1.5" opacity=".55"></line>
+                <circle cx="170" cy="170" r="163" fill="none" stroke="var(--pomo-a2)" stroke-width="5" stroke-linecap="round"
+                        stroke-dasharray="151.6 1024.2" transform="rotate(-90 170 170)"></circle>
+                <circle cx="300.7" cy="72.6" r="11" fill="var(--pomo-a2)" opacity=".18"></circle>
+                <circle cx="300.7" cy="72.6" r="6" fill="var(--pomo-a2)"></circle>
+              </svg>
+              <div class="ring-face">
+                <div class="cg ring-time ot">+03:42</div>
+                <div class="hand ring-sub">geplant 25 · gesamt 28:42</div>
+              </div>
+            </div>
+
+            <div class="meta">
+              <div>
+                <div class="label">GEPLANTES ENDE</div>
+                <div class="cg meta-value">14:31</div>
+              </div>
+              <div>
+                <div class="label">PRESET</div>
+                <div class="cg meta-value" style="font-size: 22px;">25 / 5 / 15</div>
+              </div>
+              <div>
+                <div class="label">TAGESZIEL</div>
+                <div class="goal-dots">
+                  <div class="on"></div><div class="on"></div><div class="pending"></div><div></div>
+                  <div></div><div></div><div></div><div></div>
+                </div>
+                <div class="label" style="margin-top: 9px;">2 VON 8 · DIESE ZÄHLT BEIM ABSCHLUSS</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button class="btn primary">FERTIG · PAUSE STARTEN</button>
+            <button class="btn">NUR FERTIG</button>
+            <button class="btn ghost">STÖRUNG</button>
+          </div>
+
+          <div class="quote-row">
+            <div class="dash"></div>
+            <div class="hand">nächste Erinnerung in 1 Min · Obergrenze bei +60</div>
+          </div>
+        </div>
+
+        <div class="stats-pane">
+          <div>
+            <div class="hand" style="font-size: 21px; color: var(--pomo-a3);">Woran arbeitest du?</div>
+            <div class="cg" style="font-size: 26px; margin-top: 4px;">Rocketz Flying in the Wind</div>
+          </div>
+          <div class="rule"></div>
+          <div class="kpis">
+            <div>
+              <div class="cg kpi-value">128</div>
+              <div class="label" style="margin-top: 7px;">FOKUSMINUTEN HEUTE</div>
+              <div class="note" style="font-size: 17px; margin-top: 6px;">zählt die Überzeit mit — wie heute schon</div>
+            </div>
+            <div>
+              <div class="cg kpi-value" style="color: var(--pomo-a3);">87 %</div>
+              <div class="label" style="margin-top: 7px;">ABSCHLUSSQUOTE</div>
+            </div>
+            <div>
+              <div class="cg kpi-value" style="color: var(--pomo-a1);">6</div>
+              <div class="label" style="margin-top: 7px;">TAGE IN FOLGE</div>
+            </div>
+            <div class="kpi-new">
+              <span class="badge">NEU</span>
+              <div class="cg kpi-value ot">6:20</div>
+              <div class="label" style="margin-top: 7px;">Ø ÜBERZEIT</div>
+            </div>
+          </div>
+          <div class="rule"></div>
+          <div class="note">Der Innenring bleibt als Schatten stehen: Der Plan ist erfüllt.
+            Die Mehrzeit läuft außen auf der Bahn, die bisher nur Zierde war — buchstäblich außerhalb des Plans.
+            Eine volle Runde entspricht einer weiteren Fokuslänge.</div>
+          <div class="note">„+ 5 Minuten" entfällt. Es hat die Überzeit bisher als Plan getarnt,
+            weil es <span style="font-family: Jost; font-size: 14px;">planned_seconds</span> erhöht.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ 2 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="num">2</span><h2>Der Ablauf in vier Zuständen</h2>
+      <span class="hint">Nur Anzeige und Watchdog ändern sich — die Zustände im Server bleiben</span>
+    </div>
+
+    <div class="states">
+      <div class="state">
+        <div class="eyebrow">LÄUFT</div>
+        <div class="sring">
+          <svg width="132" height="132" viewBox="0 0 132 132" aria-hidden="true">
+            <defs>
+              <linearGradient id="arc2" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0%" stop-color="#B48DF0"></stop><stop offset="45%" stop-color="#FF9679"></stop><stop offset="100%" stop-color="#F6C177"></stop>
+              </linearGradient>
+            </defs>
+            <circle cx="66" cy="66" r="60" fill="none" stroke="var(--pomo-line)" stroke-width="1" stroke-dasharray="2 5"></circle>
+            <circle cx="66" cy="66" r="52" fill="none" stroke="var(--pomo-line)" stroke-width="6"></circle>
+            <circle cx="66" cy="66" r="52" fill="none" stroke="url(#arc2)" stroke-width="6" stroke-linecap="round"
+                    stroke-dasharray="28.3 326.7" transform="rotate(-90 66 66)"></circle>
+          </svg>
+          <div class="face"><span>02:10</span></div>
+        </div>
+        <div class="what">Countdown wie bisher.<br><code>running</code></div>
+        <div class="arrow">→</div>
+      </div>
+
+      <div class="state">
+        <div class="eyebrow" style="color: var(--pomo-a1);">ENDE ERREICHT</div>
+        <div class="sring">
+          <svg width="132" height="132" viewBox="0 0 132 132" aria-hidden="true">
+            <circle cx="66" cy="66" r="60" fill="none" stroke="var(--pomo-line)" stroke-width="1" stroke-dasharray="2 5"></circle>
+            <circle cx="66" cy="66" r="52" fill="none" stroke="var(--pomo-line)" stroke-width="6"></circle>
+            <circle cx="66" cy="66" r="52" fill="none" stroke="url(#arc2)" stroke-width="6" opacity=".2"></circle>
+            <line x1="66" y1="2" x2="66" y2="12" stroke="var(--pomo-ink)" stroke-width="1.5" opacity=".55"></line>
+          </svg>
+          <div class="face"><span>00:00</span></div>
+        </div>
+        <div class="what"><b>Ton, Toast, Overlay</b> wie bisher — aber mit <b>Weiterarbeiten</b> statt „+5".<br><code>expire() → finished</code></div>
+        <div class="arrow">→</div>
+      </div>
+
+      <div class="state">
+        <div class="eyebrow" style="color: var(--pomo-a2);">ÜBERZEIT</div>
+        <div class="sring">
+          <svg width="132" height="132" viewBox="0 0 132 132" aria-hidden="true">
+            <circle cx="66" cy="66" r="60" fill="none" stroke="var(--pomo-line)" stroke-width="1" stroke-dasharray="2 5"></circle>
+            <circle cx="66" cy="66" r="52" fill="none" stroke="var(--pomo-line)" stroke-width="6"></circle>
+            <circle cx="66" cy="66" r="52" fill="none" stroke="url(#arc2)" stroke-width="6" opacity=".2"></circle>
+            <line x1="66" y1="2" x2="66" y2="12" stroke="var(--pomo-ink)" stroke-width="1.5" opacity=".55"></line>
+            <circle cx="66" cy="66" r="60" fill="none" stroke="var(--pomo-a2)" stroke-width="3.5" stroke-linecap="round"
+                    stroke-dasharray="55.8 377" transform="rotate(-90 66 66)"></circle>
+          </svg>
+          <div class="face"><span class="ot">+03:42</span></div>
+        </div>
+        <div class="what">Zählt aufwärts. <b>Alle 5 Min</b> ein leiser Toast, kein Ton.<br><code>finished · overtime_seconds</code></div>
+        <div class="arrow">→</div>
+      </div>
+
+      <div class="state">
+        <div class="eyebrow" style="color: var(--pomo-muted);">ANGEHALTEN</div>
+        <div class="sring">
+          <svg width="132" height="132" viewBox="0 0 132 132" aria-hidden="true">
+            <circle cx="66" cy="66" r="52" fill="none" stroke="var(--pomo-line)" stroke-width="6"></circle>
+            <circle cx="66" cy="66" r="60" fill="none" stroke="var(--pomo-a2)" stroke-width="3.5" opacity=".35"></circle>
+          </svg>
+          <div class="face"><span style="color: var(--pomo-muted);">+60:00</span></div>
+        </div>
+        <div class="what">Nach der <b>Obergrenze</b> steht die Uhr. Nachfrage wie beim Absturz.<br><code>recovered = 1 · Event cap</code></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ 3 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="num">3</span><h2>Die drei Dialoge</h2>
+      <span class="hint">Alle in der vorhandenen Overlay-Karte aus <code>base.html</code></span>
+    </div>
+
+    <div class="overlays">
+      <div class="ov">
+        <div class="eyebrow">ARBEITSPHASE FERTIG</div>
+        <div class="title">Fertig</div>
+        <div class="hand">Die Uhr läuft weiter, falls du im Flow bist.</div>
+        <div class="actions">
+          <button class="btn primary">PAUSE STARTEN</button>
+          <button class="btn">WEITERARBEITEN</button>
+          <button class="btn quiet">FERTIG</button>
+        </div>
+        <div class="label" style="margin-top: 24px;">WIE WAR DER FOKUS?</div>
+        <div class="stars"><button>1</button><button>2</button><button>3</button><button>4</button><button>5</button></div>
+        <div class="note caption">beim Ablauf · „+ 5 Minuten" wird zu „Weiterarbeiten"</div>
+      </div>
+
+      <div class="ov">
+        <div class="eyebrow" style="color: var(--pomo-a2);">ABGESCHLOSSEN · PAUSE LÄUFT</div>
+        <div class="title">25:00 <span class="ot">+ 3:42</span></div>
+        <div class="hand">Warum überzogen?</div>
+        <div class="chips">
+          <button class="chip on">Im Flow</button>
+          <button class="chip">Nicht bemerkt</button>
+          <button class="chip">Musste fertig werden</button>
+        </div>
+        <div class="label" style="margin-top: 22px;">WIE WAR DER FOKUS?</div>
+        <div class="stars"><button>1</button><button>2</button><button>3</button><button class="on">4</button><button>5</button></div>
+        <div class="actions"><button class="btn quiet">SCHLIESSEN</button></div>
+        <div class="note caption">nach Fertig, nur ab 1 Min Überzeit · blockiert nichts, die Pause läuft schon</div>
+      </div>
+
+      <div class="ov">
+        <div class="eyebrow" style="color: var(--pomo-muted);">ÜBERZEIT ANGEHALTEN</div>
+        <div class="title">60 Minuten über der Zeit</div>
+        <div class="hand">Wie viel davon war Arbeit?</div>
+        <div class="actions">
+          <button class="btn primary">ALLES · 85 MIN</button>
+          <button class="btn">NUR GEPLANTE 25</button>
+          <button class="btn quiet">VERWERFEN</button>
+        </div>
+        <div class="pick">
+          <div class="label" style="display: flex; justify-content: space-between;">
+            <span>ODER ENDE WÄHLEN</span><span class="ot">14:49 · 43 MIN</span>
+          </div>
+          <div class="pick-track"><div class="bar"></div><div class="plan"></div><div class="over"></div><div class="tick"></div><div class="knob"></div></div>
+          <div class="pick-scale"><span class="s">14:06</span><span class="m">PLAN 14:31</span><span class="e">GRENZE 15:31</span></div>
+        </div>
+        <div class="note caption">derselbe Dialog nach einem Absturz — ersetzt „Als erledigt / Geplante Dauer"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ 4 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="num">4</span><h2>Überall sonst</h2>
+      <span class="hint">Mini-Timer, Tab-Titel, Erinnerung, Einstellungen</span>
+    </div>
+
+    <div class="peri">
+      <div class="card">
+        <div class="label">MINI-TIMER IN DER KOPFLEISTE</div>
+        <div class="mini-row">
+          <span class="cap">läuft</span>
+          <span class="mini">
+            <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+              <circle cx="13" cy="13" r="10.5" fill="none" stroke="var(--pomo-line)" stroke-width="3"></circle>
+              <circle cx="13" cy="13" r="10.5" fill="none" stroke="var(--pomo-a1)" stroke-width="3" stroke-linecap="round" stroke-dasharray="46 65.97" transform="rotate(-90 13 13)"></circle>
+            </svg>
+            <span class="t">17:30</span><span class="l">ARBEITSPHASE</span>
+          </span>
+        </div>
+        <div class="mini-row">
+          <span class="cap">Überzeit</span>
+          <span class="mini over">
+            <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+              <circle cx="13" cy="13" r="10.5" fill="none" stroke="var(--pomo-line)" stroke-width="3"></circle>
+              <circle cx="13" cy="13" r="10.5" fill="none" stroke="var(--pomo-a2)" stroke-width="3" stroke-linecap="round" stroke-dasharray="9.76 65.97" transform="rotate(-90 13 13)"></circle>
+            </svg>
+            <span class="t">+03:42</span><span class="l">ÜBERZEIT</span>
+          </span>
+        </div>
+        <div class="mini-row">
+          <span class="cap">Pause überzogen</span>
+          <span class="mini over">
+            <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+              <circle cx="13" cy="13" r="10.5" fill="none" stroke="var(--pomo-line)" stroke-width="3"></circle>
+              <circle cx="13" cy="13" r="10.5" fill="none" stroke="var(--pomo-a2)" stroke-width="3" stroke-linecap="round" stroke-dasharray="28.6 65.97" transform="rotate(-90 13 13)"></circle>
+            </svg>
+            <span class="t">+02:10</span><span class="l">PAUSE ÜBERZOGEN</span>
+          </span>
+        </div>
+        <div class="mini-row" style="margin-bottom: 0;">
+          <span class="cap">angehalten</span>
+          <span class="mini capped">
+            <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+              <circle cx="13" cy="13" r="10.5" fill="none" stroke="var(--pomo-a2)" stroke-width="3" opacity=".35"></circle>
+            </svg>
+            <span class="t">+60:00</span><span class="l">ANGEHALTEN</span>
+          </span>
+        </div>
+        <div class="note" style="margin-top: 16px;">langsames Atmen statt Blinken — sichtbar, aber nicht nervig</div>
+      </div>
+
+      <div class="card">
+        <div class="label">TAB- UND FENSTERTITEL</div>
+        <div class="tabbar">
+          <div class="tab on"><span class="ot">+03:42</span> · Überzeit · GameDev Tools</div>
+          <div class="tab">Unreal Editor</div>
+          <div class="tab">Docs</div>
+        </div>
+        <div class="tabbody"></div>
+        <div class="note" style="margin-top: 10px;">über document.title — im pywebview-Fenster wird es zum Fenstertitel</div>
+
+        <div class="label" style="margin-top: 26px;">ERINNERUNG WÄHREND DER ÜBERZEIT</div>
+        <div class="notif">
+          <div class="ico"></div>
+          <div>
+            <div class="app">GameDev Tools</div>
+            <div class="nt">Seit 10 Minuten in Überzeit</div>
+            <div class="nb">Rocketz · die Uhr läuft weiter.</div>
+          </div>
+        </div>
+        <div class="note" style="margin-top: 10px;">nur Toast, kein Ton — der Ton gehört dem Ablauf</div>
+      </div>
+
+      <div class="card" style="grid-column: 1 / 3;">
+        <div class="label">EINSTELLUNGEN · NEUER BLOCK „ÜBERZEIT"</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px;">
+          <div class="setting">
+            <div class="range"><div class="track"></div><div class="fill" style="width: 16.7%;"></div><div class="dot" style="left: 16.7%;"></div></div>
+            <div class="v">5 min</div>
+            <div class="sub">Erinnerung während der Überzeit · 0 = aus</div>
+          </div>
+          <div class="setting">
+            <div class="range"><div class="track"></div><div class="fill" style="width: 21.7%;"></div><div class="dot" style="left: 21.7%;"></div></div>
+            <div class="v">60 min</div>
+            <div class="sub">Obergrenze · danach steht die Uhr und es kommt die Nachfrage</div>
+          </div>
+        </div>
+        <div class="note">speichert beim Loslassen wie Tagesziel und Tagesbeginn · liegt in pomo_settings</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ 5 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="num">5</span><h2>In der Statistik</h2>
+      <span class="hint">Fokusminuten und Pomodoro-Zählung bleiben, wie sie sind</span>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="card">
+        <div class="cg kpi-value ot">6:20</div>
+        <div class="label" style="margin-top: 8px;">Ø ÜBERZEIT JE ARBEITSPHASE</div>
+      </div>
+      <div class="card">
+        <div class="cg kpi-value">38 %</div>
+        <div class="label" style="margin-top: 8px;">SITZUNGEN MIT ÜBERZEIT</div>
+      </div>
+      <div class="card">
+        <div class="cg kpi-value" style="color: var(--pomo-a3);">61 %</div>
+        <div class="label" style="margin-top: 8px;">DAVON IM FLOW</div>
+      </div>
+      <div class="card">
+        <div class="cg kpi-value" style="color: var(--pomo-warn);">27 %</div>
+        <div class="label" style="margin-top: 8px;">DAVON NICHT BEMERKT</div>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="card">
+        <div class="label">FOKUS PRO TAG · PLAN UND ÜBERZEIT</div>
+        <div class="bars" id="bars"></div>
+        <div class="days"><span>MO</span><span>DI</span><span>MI</span><span>DO</span><span>FR</span><span>SA</span><span>SO</span></div>
+        <div class="legend">
+          <span><i style="background: linear-gradient(180deg, var(--pomo-a1), var(--pomo-a4));"></i>GEPLANT</span>
+          <span><i style="background: var(--pomo-a2);"></i>ÜBERZEIT</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">SITZUNGSTABELLE · NEUE SPALTE „GRUND"</div>
+        <table>
+          <thead>
+            <tr><th>START</th><th>PROJEKT</th><th>DAUER</th><th>GRUND</th><th>FOKUS</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="num">08:12</td><td>Rocketz</td><td class="num">25:00</td><td></td><td class="num">5</td></tr>
+            <tr><td class="num">08:45</td><td>Rocketz</td><td class="num">25:00<span class="plus">+3:42</span></td><td><span class="tag flow">Im Flow</span></td><td class="num">5</td></tr>
+            <tr><td class="num">09:30</td><td>GameDevTools</td><td class="num">25:00<span class="plus small">+0:40</span></td><td></td><td class="num">4</td></tr>
+            <tr><td class="num">11:02</td><td>Rocketz</td><td class="num">25:00<span class="plus">+12:05</span></td><td><span class="tag unnoticed">Nicht bemerkt</span></td><td class="num">3</td></tr>
+            <tr><td class="num">13:20</td><td>Admin</td><td class="num">25:00<span class="plus">+7:30</span></td><td><span class="tag finishing">Musste fertig werden</span></td><td class="num">4</td></tr>
+            <tr><td class="num">15:02</td><td>Rocketz</td><td class="num">25:00<span class="plus">+18:00</span></td><td><span class="tag chosen">Ende gewählt</span></td><td class="num">—</td></tr>
+          </tbody>
+        </table>
+        <div class="note" style="margin-top: 14px;">unter 1 Minute bleibt die Mehrzeit grau und fragt nach keinem Grund</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var planned = [150, 200, 125, 175, 100, 225, 75];
+    var over = [12, 31, 4, 18, 0, 47, 9];
+    var box = document.getElementById('bars');
+    var scale = 150 / 280;
+    for (var i = 0; i < planned.length; i++) {
+        var col = document.createElement('div');
+        col.className = 'col';
+        var p = document.createElement('div');
+        p.className = 'p';
+        p.style.height = Math.round(planned[i] * scale) + 'px';
+        col.appendChild(p);
+        if (over[i]) {
+            var o = document.createElement('div');
+            o.className = 'o';
+            o.style.height = Math.max(3, Math.round(over[i] * scale)) + 'px';
+            col.appendChild(o);
+        }
+        box.appendChild(col);
+    }
+})();
+</script>
+</body>
+</html>
