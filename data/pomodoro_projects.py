@@ -20,7 +20,7 @@ import re
 from data import pomodoro as pomo
 from data import pomodoro_icons as icons
 from data import pomodoro_palette as palette
-from data import users
+from data import profiles
 from data.appconfig import POMO
 
 MAX_BYTES = 8 * 1024 * 1024
@@ -30,8 +30,8 @@ _DATA_URL = re.compile(r"^data:(image/[a-z+]+);base64,(.+)$", re.I | re.S)
 
 
 def image_dir():
-    """Projektbilder des aktuellen Benutzers (KONZEPT-BENUTZER.md, 3)."""
-    return users.paths()["images"]
+    """Projektbilder des aktuellen Profils (KONZEPT-PROFILE.md, 3)."""
+    return profiles.paths()["images"]
 
 
 def _ensure_dir():

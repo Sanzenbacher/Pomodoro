@@ -1,14 +1,14 @@
-/* Benutzer: Wechsel ueber den Chip in der Kopfzeile und die Verwaltung
- * unter Einstellungen -> Benutzer (KONZEPT-BENUTZER.md, 6).
+/* Profil: Wechsel ueber den Chip in der Kopfzeile und die Verwaltung
+ * unter Einstellungen -> Profil (KONZEPT-PROFILE.md, 6).
  *
  * Ein Wechsel laedt die Seite neu: Biotop, Projektfarben und Mini-Timer
- * haengen alle am Benutzer. Eigenes fetch statt Pomo.api, weil der Server
+ * haengen alle am Profil. Eigenes fetch statt Pomo.api, weil der Server
  * bei 400 einen lesbaren Grund mitschickt, den Pomo.api verschluckt.
  */
 (function () {
     'use strict';
 
-    var NOTICE = 'pomo-user-notice';
+    var NOTICE = 'pomo-profile-notice';
 
     function call(path, body, method) {
         return fetch(path, {
@@ -34,19 +34,19 @@
         return Math.floor(seconds / 60) + ':' + ('0' + seconds % 60).slice(-2);
     }
 
-    function stateText(user) {
-        if (user.state === 'running') { return '⏱ ' + clock(user.remaining_seconds); }
-        if (user.state === 'paused') { return '⏸ ' + clock(user.remaining_seconds); }
-        if (user.state === 'finished') { return '⏱ Überzeit'; }
+    function stateText(profile) {
+        if (profile.state === 'running') { return '⏱ ' + clock(profile.remaining_seconds); }
+        if (profile.state === 'paused') { return '⏸ ' + clock(profile.remaining_seconds); }
+        if (profile.state === 'finished') { return '⏱ Überzeit'; }
         return '';
     }
 
     function switchTo(id) {
-        return call('/api/pomodoro/user/switch', { id: id }).then(function (data) {
-            var text = 'Jetzt: ' + data.user.name;
+        return call('/api/pomodoro/profile/switch', { id: id }).then(function (data) {
+            var text = 'Jetzt: ' + data.profile.name;
             if (data.left_running) { text += ' · dein Timer läuft im Hintergrund weiter'; }
             try { sessionStorage.setItem(NOTICE, text); } catch (e) { /* egal */ }
-            // ?project=<id> faellt weg: Projekt-ids gelten nur beim alten Benutzer.
+            // ?project=<id> faellt weg: Projekt-ids gelten nur beim alten Profil.
             if (window.location.search) {
                 window.location.href = window.location.pathname + window.location.hash;
             } else {
@@ -66,8 +66,8 @@
 
     // ---------------------------------------------------------- Kopfzeile
 
-    var chip = document.getElementById('user-chip');
-    var menu = document.getElementById('user-menu');
+    var chip = document.getElementById('profile-chip');
+    var menu = document.getElementById('profile-menu');
 
     function closeMenu() {
         if (!menu) { return; }
@@ -83,21 +83,21 @@
             chip.setAttribute('aria-expanded', open ? 'true' : 'false');
             if (!open) { return; }
             // Laufende Timer der anderen erst beim Oeffnen holen.
-            call('/api/pomodoro/users').then(function (data) {
-                data.users.forEach(function (user) {
-                    var cell = menu.querySelector('[data-state-for="' + user.id + '"]');
-                    if (cell && user.id !== data.current) { cell.textContent = stateText(user); }
+            call('/api/pomodoro/profiles').then(function (data) {
+                data.profiles.forEach(function (profile) {
+                    var cell = menu.querySelector('[data-state-for="' + profile.id + '"]');
+                    if (cell && profile.id !== data.current) { cell.textContent = stateText(profile); }
                 });
             }).catch(function () { /* Menue geht auch ohne */ });
         });
         menu.addEventListener('click', function (event) {
-            var item = event.target.closest('[data-user]');
+            var item = event.target.closest('[data-profile]');
             if (!item) { return; }
             if (item.classList.contains('on')) { closeMenu(); return; }
-            switchTo(item.getAttribute('data-user'));
+            switchTo(item.getAttribute('data-profile'));
         });
         document.addEventListener('click', function (event) {
-            if (!menu.hidden && !event.target.closest('#user-switch')) { closeMenu(); }
+            if (!menu.hidden && !event.target.closest('#profile-switch')) { closeMenu(); }
         });
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') { closeMenu(); }
@@ -106,18 +106,18 @@
 
     // ---------------------------------------------------------- Einstellungen
 
-    var list = document.getElementById('users-list');
+    var list = document.getElementById('profiles-list');
     if (!list) { return; }
 
-    var colors = JSON.parse(document.getElementById('user-colors').textContent);
-    var nameField = document.getElementById('user-new-name');
-    var colorBox = document.getElementById('user-new-colors');
-    var copyBox = document.getElementById('user-new-copy');
-    var addButton = document.getElementById('user-new-add');
-    var hint = document.getElementById('users-hint');
+    var colors = JSON.parse(document.getElementById('profile-colors').textContent);
+    var nameField = document.getElementById('profile-new-name');
+    var colorBox = document.getElementById('profile-new-colors');
+    var copyBox = document.getElementById('profile-new-copy');
+    var addButton = document.getElementById('profile-new-add');
+    var hint = document.getElementById('profiles-hint');
     var chosenColor = null;
     var current = null;
-    var feedUser = null;
+    var feedProfile = null;
 
     function el(tag, className, text) {
         var node = document.createElement(tag);
@@ -137,7 +137,7 @@
         var free = colors.filter(function (c) { return taken.indexOf(c) < 0; });
         if (!chosenColor || taken.indexOf(chosenColor) > -1) { chosenColor = free[0] || colors[0]; }
         colors.forEach(function (color) {
-            var dot = el('button', 'user-color' + (color === chosenColor ? ' on' : ''));
+            var dot = el('button', 'profile-color' + (color === chosenColor ? ' on' : ''));
             dot.type = 'button';
             dot.style.background = color;
             dot.title = taken.indexOf(color) > -1 ? 'schon vergeben' : color;
@@ -149,64 +149,64 @@
         });
     }
 
-    function row(user, count) {
-        var isCurrent = user.id === current;
-        var line = el('div', 'user-row' + (isCurrent ? ' on' : ''));
+    function row(profile, count) {
+        var isCurrent = profile.id === current;
+        var line = el('div', 'profile-row' + (isCurrent ? ' on' : ''));
 
         // Farbe: ein unsichtbares Farbfeld unter dem Punkt
-        var swatch = el('label', 'user-dot', user.name.slice(0, 1).toUpperCase());
-        swatch.style.background = user.color;
+        var swatch = el('label', 'profile-dot', profile.name.slice(0, 1).toUpperCase());
+        swatch.style.background = profile.color;
         swatch.title = 'Farbe ändern';
         var picker = el('input');
         picker.type = 'color';
-        picker.value = user.color;
+        picker.value = profile.color;
         picker.addEventListener('change', function () {
-            call('/api/pomodoro/users/' + user.id, { color: picker.value })
+            call('/api/pomodoro/profiles/' + profile.id, { color: picker.value })
                 .then(function () { load(); if (isCurrent) { window.location.reload(); } })
                 .catch(function (error) { toast(error.message); });
         });
         swatch.appendChild(picker);
         line.appendChild(swatch);
 
-        var name = el('input', 'field user-row-name');
-        name.value = user.name;
+        var name = el('input', 'field profile-row-name');
+        name.value = profile.name;
         name.maxLength = 40;
         name.setAttribute('aria-label', 'Name');
         name.addEventListener('change', function () {
-            call('/api/pomodoro/users/' + user.id, { name: name.value })
+            call('/api/pomodoro/profiles/' + profile.id, { name: name.value })
                 .then(function (data) {
-                    toast('Umbenannt: ' + data.user.name);
+                    toast('Umbenannt: ' + data.profile.name);
                     if (isCurrent) { window.location.reload(); } else { load(); }
                 })
-                .catch(function (error) { toast(error.message); name.value = user.name; });
+                .catch(function (error) { toast(error.message); name.value = profile.name; });
         });
         name.addEventListener('keydown', function (event) {
             if (event.key === 'Enter') { name.blur(); }
         });
         line.appendChild(name);
 
-        var meta = el('div', 'note user-row-meta',
-            user.sessions + (user.sessions === 1 ? ' Pomodoro' : ' Pomodoros') +
-            (user.created_at ? ' · ' + since(user.created_at) : ''));
-        if (user.id === feedUser) {
-            var feed = el('span', 'user-feed', 'MERGE REQUESTS');
-            feed.title = 'Andere Anwendungen (Merge Requests) lesen ohne ?user= diese Daten.';
+        var meta = el('div', 'note profile-row-meta',
+            profile.sessions + (profile.sessions === 1 ? ' Pomodoro' : ' Pomodoros') +
+            (profile.created_at ? ' · ' + since(profile.created_at) : ''));
+        if (profile.id === feedProfile) {
+            var feed = el('span', 'profile-feed', 'MERGE REQUESTS');
+            feed.title = 'Andere Anwendungen (Merge Requests) lesen ohne ?profile= diese Daten.';
             meta.appendChild(feed);
         }
         line.appendChild(meta);
 
-        line.appendChild(el('div', 'user-row-state', stateText(user)));
+        line.appendChild(el('div', 'profile-row-state', stateText(profile)));
 
-        var actions = el('div', 'user-row-actions');
+        var actions = el('div', 'profile-row-actions');
         if (isCurrent) {
-            actions.appendChild(el('span', 'label user-active', 'AKTIV'));
+            actions.appendChild(el('span', 'label profile-active', 'AKTIV'));
         } else {
             var go = el('button', 'btn small', 'WECHSELN');
-            go.addEventListener('click', function () { switchTo(user.id); });
+            go.addEventListener('click', function () { switchTo(profile.id); });
             actions.appendChild(go);
-            if (count > 1 && user.id !== feedUser) {
+            if (count > 1 && profile.id !== feedProfile) {
                 var del = el('button', 'btn small quiet', 'LÖSCHEN');
-                del.addEventListener('click', function () { confirmDelete(line, user); });
+                del.addEventListener('click', function () { confirmDelete(line, profile); });
                 actions.appendChild(del);
             }
         }
@@ -216,33 +216,33 @@
 
     /* Loeschen nur nach Eintippen des Namens -- inline statt prompt(),
        das im pywebview-Fenster nicht zuverlaessig ist. */
-    function confirmDelete(line, user) {
+    function confirmDelete(line, profile) {
         if (line.nextSibling && line.nextSibling.classList &&
-                line.nextSibling.classList.contains('user-confirm')) {
+                line.nextSibling.classList.contains('profile-confirm')) {
             line.parentNode.removeChild(line.nextSibling);
             return;
         }
-        var box = el('div', 'user-confirm');
+        var box = el('div', 'profile-confirm');
         box.appendChild(el('div', 'note',
-            'Projekte, Sitzungen, Journal und Biotop von ' + user.name +
+            'Projekte, Sitzungen, Journal und Biotop von ' + profile.name +
             ' werden beiseitegelegt (storage/geloescht/) und sind hier nicht mehr zu sehen.' +
-            (user.state !== 'idle' ? ' Der laufende Timer wird abgebrochen.' : '') +
+            (profile.state !== 'idle' ? ' Der laufende Timer wird abgebrochen.' : '') +
             ' Zum Bestätigen den Namen eintippen:'));
         var input = el('input', 'field');
-        input.placeholder = user.name;
+        input.placeholder = profile.name;
         var go = el('button', 'btn small danger', 'ENDGÜLTIG LÖSCHEN');
         go.disabled = true;
         input.addEventListener('input', function () {
-            go.disabled = input.value.trim() !== user.name;
+            go.disabled = input.value.trim() !== profile.name;
         });
         go.addEventListener('click', function () {
-            call('/api/pomodoro/users/' + user.id, null, 'DELETE')
-                .then(function () { toast(user.name + ' gelöscht'); window.location.reload(); })
+            call('/api/pomodoro/profiles/' + profile.id, null, 'DELETE')
+                .then(function () { toast(profile.name + ' gelöscht'); window.location.reload(); })
                 .catch(function (error) { toast(error.message); });
         });
         var keep = el('button', 'btn small quiet', 'ABBRECHEN');
         keep.addEventListener('click', function () { box.parentNode.removeChild(box); });
-        var bar = el('div', 'user-confirm-bar');
+        var bar = el('div', 'profile-confirm-bar');
         bar.appendChild(input);
         bar.appendChild(go);
         bar.appendChild(keep);
@@ -252,21 +252,21 @@
     }
 
     function load() {
-        return call('/api/pomodoro/users').then(function (data) {
+        return call('/api/pomodoro/profiles').then(function (data) {
             current = data.current;
-            feedUser = data.feed_user;
+            feedProfile = data.feed_profile;
             list.innerHTML = '';
-            data.users.forEach(function (user) { list.appendChild(row(user, data.users.length)); });
-            askRow.hidden = data.users.length < 2;
-            renderColors(data.users.map(function (u) { return u.color; }));
+            data.profiles.forEach(function (profile) { list.appendChild(row(profile, data.profiles.length)); });
+            askRow.hidden = data.profiles.length < 2;
+            renderColors(data.profiles.map(function (u) { return u.color; }));
         }).catch(function (error) { toast(error.message); });
     }
 
-    function showHint(user) {
+    function showHint(profile) {
         hint.innerHTML = '';
-        hint.appendChild(document.createTextNode(user.name + ' ist angelegt. '));
+        hint.appendChild(document.createTextNode(profile.name + ' ist angelegt. '));
         var go = el('button', 'btn small primary', 'JETZT WECHSELN');
-        go.addEventListener('click', function () { switchTo(user.id); });
+        go.addEventListener('click', function () { switchTo(profile.id); });
         var stay = el('button', 'btn small quiet', 'HIER BLEIBEN');
         stay.addEventListener('click', function () { hint.hidden = true; });
         hint.appendChild(go);
@@ -278,12 +278,12 @@
         var name = nameField.value.trim();
         if (!name) { nameField.focus(); return; }
         addButton.disabled = true;
-        call('/api/pomodoro/users', { name: name, color: chosenColor, copy_settings: copyBox.checked })
+        call('/api/pomodoro/profiles', { name: name, color: chosenColor, copy_settings: copyBox.checked })
             .then(function (data) {
                 nameField.value = '';
                 chosenColor = null;
-                showHint(data.user);
-                // Der Chip in der Kopfzeile erscheint erst ab zwei Benutzern
+                showHint(data.profile);
+                // Der Chip in der Kopfzeile erscheint erst ab zwei Profilen
                 // -- beim naechsten Laden. Die Liste hier sofort.
                 return load();
             })
@@ -291,11 +291,11 @@
             .then(function () { addButton.disabled = false; });
     }
 
-    // Beim Start fragen -- erst ab zwei Benutzern sichtbar
-    var ask = document.getElementById('user-ask');
-    var askRow = document.getElementById('users-ask');
+    // Beim Start fragen -- erst ab zwei Profilen sichtbar
+    var ask = document.getElementById('profile-ask');
+    var askRow = document.getElementById('profiles-ask');
     ask.addEventListener('change', function () {
-        call('/api/pomodoro/users/settings', { ask_on_start: ask.checked })
+        call('/api/pomodoro/profiles/settings', { ask_on_start: ask.checked })
             .then(function (data) {
                 toast(data.ask_on_start ? 'Beim Start kommt die Auswahl' : 'Beim Start geht es direkt los');
             })

@@ -18,7 +18,7 @@ DEFAULTS = {
         "project_image_veil": True,
     },
     "server": {"host": "127.0.0.1", "port": 5333},
-    "users": {"first_name": "Ich"},
+    "profiles": {"first_name": "Ich"},
 }
 
 
@@ -38,8 +38,25 @@ def load():
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as handle:
             data = yaml.safe_load(handle) or {}
+    # Aeltere config.yaml: Abschnitt hiess "users" statt "profiles".
+    if "users" in data and "profiles" not in data:
+        data["profiles"] = data.pop("users")
     return _merge(DEFAULTS, data)
 
 
 CONFIG = load()
 POMO = CONFIG["pomodoro"]
+
+
+def server_address():
+    return CONFIG["server"]["host"], int(CONFIG["server"]["port"])
+
+
+def server_running(host=None, port=None):
+    """Lauscht dort schon jemand? Vorgabe: Adresse aus config.yaml."""
+    import socket
+    if host is None or port is None:
+        host, port = server_address()
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        probe.settimeout(0.5)
+        return probe.connect_ex((host, port)) == 0

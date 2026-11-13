@@ -23,10 +23,10 @@ pomodoro:
   project_colors: true
   project_image_veil: true   # Bild weichgezeichnet hinter dem Timer
 
-# Mehrere Benutzer (KONZEPT-BENUTZER.md). Nur fuer den allerersten Start:
-# So heisst der Benutzer, in den die bisherigen Daten umziehen. Danach
+# Mehrere Profile (KONZEPT-PROFILE.md). Nur fuer den allerersten Start:
+# So heisst das Profil, in das die bisherigen Daten umziehen. Danach
 # wird unter Einstellungen umbenannt, nicht hier.
-users:
+profiles:
   first_name: Sascha
 
 server:

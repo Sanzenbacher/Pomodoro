@@ -14,7 +14,7 @@ import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from data import users
+from data import profiles
 from data.appconfig import POMO
 
 KINDS = ("work", "short_break", "long_break")
@@ -30,8 +30,8 @@ OVERTIME_THRESHOLD = 60
 #: Kategorien fuers Journal beim ersten Start (use_timer = 0, use_journal = 1).
 DEFAULT_ACTIVITIES = ("Sport", "Spazieren", "Gitarre")
 
-#: Je Benutzer ein Watchdog: {user_id: threading.Timer}. Lenas Timer laeuft
-#: weiter, waehrend Martin schreibt (KONZEPT-BENUTZER.md, 5).
+#: Je Profil ein Watchdog: {profile_id: threading.Timer}. Lenas Timer laeuft
+#: weiter, waehrend Martin schreibt (KONZEPT-PROFILE.md, 5).
 _timers = {}
 _timer_lock = threading.Lock()
 
@@ -93,15 +93,15 @@ SETTING_SPEC = {
     "biotop_cards": {"default": 100, "min": 0, "max": 100},
 }
 
-#: Je Benutzer: {user_id: {key: value}}.
+#: Je Profil: {profile_id: {key: value}}.
 _settings_cache = {}
 
 
 def settings():
     """Gelesen wird oft (day_of steckt in jeder Auswertung), geschrieben
     selten -- deshalb einmal lesen und im Prozess halten."""
-    user_id = users.current()
-    cached = _settings_cache.get(user_id)
+    profile_id = profiles.current()
+    cached = _settings_cache.get(profile_id)
     if cached is not None:
         return cached
 
@@ -121,7 +121,7 @@ def settings():
         # Noch kein init_db gelaufen: Vorgaben genuegen.
         return values
 
-    _settings_cache[user_id] = values
+    _settings_cache[profile_id] = values
     return values
 
 
@@ -150,29 +150,29 @@ def save_settings(values):
         conn.commit()
     finally:
         conn.close()
-    _settings_cache.pop(users.current(), None)
+    _settings_cache.pop(profiles.current(), None)
     return written
 
 
 # ---------------------------------------------------------------- Datenbank
 
 
-#: Benutzer, deren Datenbank in diesem Prozess schon init_db() gesehen hat.
+#: Profile, deren Datenbank in diesem Prozess schon init_db() gesehen hat.
 _initialised = set()
 _init_lock = threading.Lock()
 
 
 def db_path():
-    """Datenbank des aktuellen Benutzers (KONZEPT-BENUTZER.md, 3)."""
-    return users.paths()["db"]
+    """Datenbank des aktuellen Profils (KONZEPT-PROFILE.md, 3)."""
+    return profiles.paths()["db"]
 
 
 def get_db():
-    """Verbindung zur Datenbank des aktuellen Benutzers. Beim ersten Zugriff
-    je Benutzer laeuft init_db() -- Schema, Migrationen, Recovery."""
-    if users.current() not in _initialised:
+    """Verbindung zur Datenbank des aktuellen Profils. Beim ersten Zugriff
+    je Profil laeuft init_db() -- Schema, Migrationen, Recovery."""
+    if profiles.current() not in _initialised:
         with _init_lock:
-            if users.current() not in _initialised:
+            if profiles.current() not in _initialised:
                 init_db()
     return _connect()
 
@@ -283,12 +283,12 @@ CREATE INDEX IF NOT EXISTS idx_events_session   ON pomo_events(session_id);
 def init_db():
     # Zuerst eintragen: Alles hier drin (Migration, recover) ruft get_db()
     # und soll nicht noch einmal hier landen.
-    user_id = users.current()
-    _initialised.add(user_id)
+    profile_id = profiles.current()
+    _initialised.add(profile_id)
     try:
         _init_db()
     except Exception:
-        _initialised.discard(user_id)
+        _initialised.discard(profile_id)
         raise
 
 
@@ -440,7 +440,7 @@ def _migrate_categories(conn, fresh=False):
 
     # Einmal sichern: Danach ist die alte Liste umbenannt und die
     # Biotop-Zuordnung der Arten umgezogen.
-    backups = users.paths()["backups"]
+    backups = profiles.paths()["backups"]
     os.makedirs(backups, exist_ok=True)
     target = os.path.join(backups, "pomodoro-vor-kategorien-%s.db"
                           % datetime.now().strftime("%Y%m%d-%H%M%S"))
@@ -1221,7 +1221,7 @@ def recover_decide(mode, until=None):
 
 def _disarm():
     with _timer_lock:
-        timer = _timers.pop(users.current(), None)
+        timer = _timers.pop(profiles.current(), None)
         if timer:
             timer.cancel()
 
@@ -1252,10 +1252,10 @@ def _arm():
     else:
         return
     with _timer_lock:
-        # threading.Timer erbt den Benutzer-Kontext nicht -- mitgeben.
-        timer = threading.Timer(max(0.0, delay), users.bound(handler))
+        # threading.Timer erbt den Profil-Kontext nicht -- mitgeben.
+        timer = threading.Timer(max(0.0, delay), profiles.bound(handler))
         timer.daemon = True
-        _timers[users.current()] = timer
+        _timers[profiles.current()] = timer
         timer.start()
 
 
@@ -1359,14 +1359,14 @@ def events(session_id):
         conn.close()
 
 
-# ---------------------------------------------------------------- Benutzer
+# ---------------------------------------------------------------- Profil
 
 
 def copy_settings_from(source_id):
-    """Einstellungen und Presets eines anderen Benutzers in den aktuellen
+    """Einstellungen und Presets eines anderen Profils in das aktuelle
     uebernehmen -- nur die einstellbaren Werte, keine internen Marker.
-    Projekte, Biotop und Verlauf werden nie kopiert (KONZEPT-BENUTZER.md, 6)."""
-    with users.as_user(source_id):
+    Projekte, Biotop und Verlauf werden nie kopiert (KONZEPT-PROFILE.md, 6)."""
+    with profiles.as_profile(source_id):
         values = dict(settings())
         conn = get_db()
         try:
@@ -1390,8 +1390,8 @@ def copy_settings_from(source_id):
         conn.close()
 
 
-def user_summary():
-    """Kurzbild des aktuellen Benutzers fuer die Benutzerliste: laufender
+def profile_summary():
+    """Kurzbild des aktuellen Profils fuer die Profilliste: laufender
     Timer und Anzahl gezaehlter Arbeitssitzungen."""
     state = get_state()
     conn = get_db()
@@ -1407,15 +1407,15 @@ def user_summary():
             "ends_at": session.get("ends_at"), "sessions": count}
 
 
-def forget_user(user_id):
+def forget_profile(profile_id):
     """Vor dem Loeschen: Timer abbrechen, Watchdog und Caches raeumen."""
-    with users.as_user(user_id):
+    with profiles.as_profile(profile_id):
         state = get_state()
         if state["state"] != "idle":
             abort()
         _disarm()
-    _settings_cache.pop(user_id, None)
-    _initialised.discard(user_id)
+    _settings_cache.pop(profile_id, None)
+    _initialised.discard(profile_id)
     from data import pomodoro_notify
     with pomodoro_notify._pending_lock:
-        pomodoro_notify._pending.pop(user_id, None)
+        pomodoro_notify._pending.pop(profile_id, None)

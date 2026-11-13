@@ -14,38 +14,38 @@
     </div>
   </div>
 
-  <!-- Benutzer (KONZEPT-BENUTZER.md, 6): jeder mit eigenen Projekten, eigenem
+  <!-- Profil (KONZEPT-PROFILE.md, 6): jeder mit eigenen Projekten, eigenem
        Biotop und eigenen Einstellungen. Alles darunter gilt fuer den aktiven. -->
-  <div class="card users-card" id="benutzer" style="margin-top: 26px;">
-    <h3>BENUTZER</h3>
+  <div class="card profiles-card" id="profile" style="margin-top: 26px;">
+    <h3>PROFILE</h3>
     <div class="note" style="margin-top: 6px;">
-      Jeder Benutzer hat eigene Projekte, ein eigenes Journal, ein eigenes Biotop
+      Jedes Profil hat eigene Projekte, ein eigenes Journal, ein eigenes Biotop
       und eigene Einstellungen. Ein laufender Timer läuft beim Wechseln weiter.
     </div>
 
-    <div class="users-list" id="users-list"></div>
+    <div class="profiles-list" id="profiles-list"></div>
 
-    <div class="users-new">
-      <input class="field" id="user-new-name" maxlength="40" placeholder="Name des neuen Benutzers"
+    <div class="profiles-new">
+      <input class="field" id="profile-new-name" maxlength="40" placeholder="Name des neuen Profils"
              autocomplete="off">
-      <div class="user-colors" id="user-new-colors"></div>
+      <div class="profile-colors" id="profile-new-colors"></div>
       <label class="switch" title="Tagesziel, Tagesbeginn, Überzeit, Biotop-Werte und Presets">
-        <input type="checkbox" id="user-new-copy" checked> EINSTELLUNGEN VON {{ current_user.name | upper }} ÜBERNEHMEN
+        <input type="checkbox" id="profile-new-copy" checked> EINSTELLUNGEN VON {{ current_profile.name | upper }} ÜBERNEHMEN
       </label>
-      <button class="btn small primary" id="user-new-add">ANLEGEN</button>
+      <button class="btn small primary" id="profile-new-add">ANLEGEN</button>
     </div>
-    <div class="note users-hint" id="users-hint" hidden></div>
+    <div class="note profiles-hint" id="profiles-hint" hidden></div>
 
-    <div class="users-ask" id="users-ask" {{ 'hidden' if all_users | length < 2 }}>
+    <div class="profiles-ask" id="profiles-ask" {{ 'hidden' if all_profiles | length < 2 }}>
       <label class="switch">
-        <input type="checkbox" id="user-ask" {{ 'checked' if ask_on_start }}> BEIM START FRAGEN, WER ICH BIN
+        <input type="checkbox" id="profile-ask" {{ 'checked' if ask_on_start }}> BEIM START FRAGEN, WER ICH BIN
       </label>
       <span class="note">Nach jedem Start der App kommt zuerst die Auswahl „Wer bist du?".</span>
     </div>
   </div>
 
   <div class="settings-for cg" style="margin-top: 30px;">
-    Einstellungen für <em>{{ current_user.name }}</em>
+    Einstellungen für <em>{{ current_profile.name }}</em>
   </div>
 
   <!-- Tagesziel und Tagesbeginn -->
@@ -213,7 +213,7 @@
 </div>
 
 <script id="preset-data" type="application/json">{{ presets | tojson }}</script>
-<script id="user-colors" type="application/json">{{ user_colors | tojson }}</script>
+<script id="profile-colors" type="application/json">{{ profile_colors | tojson }}</script>
 {% endblock %}
 
 {% block scripts %}

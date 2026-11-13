@@ -21,67 +21,97 @@ from data import pomodoro_notify as notify
 from data import pomodoro_palette as palette_mod
 from data import pomodoro_projects as projects
 from data import pomodoro_stats as stats
-from data import users
+from data import profiles
 from data.appconfig import POMO
 
 bp = Blueprint("pomodoro", __name__)
 
 
 #: Abgefragt von anderen Anwendungen (Merge Requests), ohne Cookie. Hier
-#: gilt nie der zuletzt gewaehlte Benutzer -- sonst saehe das Spiel nach
-#: jedem Wechsel in der App fremde Daten. Ohne ?user= der erste Benutzer.
+#: gilt nie das zuletzt gewaehlte Profil -- sonst saehe das Spiel nach
+#: jedem Wechsel in der App fremde Daten. Ohne ?profile= das erste Profil.
 FEED_PATHS = ("/api/pomodoro/activity", "/api/pomodoro/journal/feed")
 
 #: Kennung dieses App-Starts. "Beim Start fragen" heisst: einmal je Start,
-#: nicht nur ohne Cookie -- der Browser behielte pomo_user sonst ein Jahr.
+#: nicht nur ohne Cookie -- der Browser behielte pomo_profile sonst ein Jahr.
 BOOT_ID = uuid.uuid4().hex[:12]
 BOOT_COOKIE = "pomo_boot"
+
+#: Welches Profil dieser Browser gewaehlt hat. Bis zur Umbenennung hiess
+#: das Cookie pomo_user -- es wird noch gelesen und beim ersten Kontakt
+#: durch das neue ersetzt, sonst verloere jeder Browser seine Wahl.
+PROFILE_COOKIE = "pomo_profile"
+OLD_PROFILE_COOKIE = "pomo_user"
+PROFILE_COOKIE_AGE = 365 * 24 * 3600
+
+
+def _set_profile_cookie(response, profile_id):
+    response.set_cookie(PROFILE_COOKIE, profile_id, max_age=PROFILE_COOKIE_AGE,
+                        samesite="Lax")
+    response.delete_cookie(OLD_PROFILE_COOKIE)
 
 
 def _wants_chooser():
     """Seitenaufruf, der erst die Auswahl "Wer bist du?" braucht?"""
     path = request.path
-    if request.method != "GET" or path == "/pomodoro/users":
+    if request.method != "GET" or path == "/pomodoro/profiles":
         return False
     if not (path == "/pomodoro" or path.startswith("/pomodoro/")):
         return False
     if path.startswith("/pomodoro/media/"):
         return False
-    return (users.ask_on_start()
+    return (profiles.ask_on_start()
             and request.cookies.get(BOOT_COOKIE) != BOOT_ID)
 
 
 @bp.before_app_request
-def _enter_user():
-    """Jede Anfrage laeuft fuer genau einen Benutzer (KONZEPT-BENUTZER.md, 4)."""
+def _enter_profile():
+    """Jede Anfrage laeuft fuer genau ein Profil (KONZEPT-PROFILE.md, 4)."""
     if request.path in FEED_PATHS:
-        # ?user= nimmt id oder Namen: ?user=Lena reicht.
-        wanted = request.args.get("user")
+        if "user" in request.args and "profile" not in request.args:
+            # Laut statt still die Daten des Feed-Profils: Ein Abnehmer mit
+            # dem alten Parameter zaehlte sonst unbemerkt fuer den Falschen.
+            return jsonify({"ok": False, "reason": "Der Parameter ?user= heisst "
+                            "jetzt ?profile=."}), 400
+        # ?profile= nimmt id oder Namen: ?profile=Lena reicht.
+        wanted = request.args.get("profile")
         if wanted:
-            found = users.find(wanted)
+            found = profiles.find(wanted)
             if not found:
-                return jsonify({"ok": False, "reason": "Unbekannter Benutzer."}), 404
-            user_id = found["id"]
+                return jsonify({"ok": False, "reason": "Unbekanntes Profil."}), 404
+            profile_id = found["id"]
         else:
-            user_id = users.feed_user_id()
+            profile_id = profiles.feed_profile_id()
     else:
         if _wants_chooser():
-            return redirect("/pomodoro/users?" + urlencode({"next": request.full_path.rstrip("?")}))
-        user_id = users.resolve(request.cookies.get("pomo_user"))
-    g.pomo_user_token = users.activate(user_id)
+            return redirect("/pomodoro/profiles?" + urlencode({"next": request.full_path.rstrip("?")}))
+        chosen = request.cookies.get(PROFILE_COOKIE)
+        if not chosen and request.cookies.get(OLD_PROFILE_COOKIE):
+            chosen = request.cookies.get(OLD_PROFILE_COOKIE)
+            g.pomo_cookie_upgrade = True
+        profile_id = profiles.resolve(chosen)
+    g.pomo_profile_token = profiles.activate(profile_id)
+
+
+@bp.after_app_request
+def _upgrade_profile_cookie(response):
+    """Altes pomo_user einmal durch pomo_profile ersetzen."""
+    if g.pop("pomo_cookie_upgrade", False):
+        _set_profile_cookie(response, profiles.current())
+    return response
 
 
 @bp.teardown_app_request
-def _leave_user(_exc):
-    token = g.pop("pomo_user_token", None)
+def _leave_profile(_exc):
+    token = g.pop("pomo_profile_token", None)
     if token is not None:
-        users.deactivate(token)
+        profiles.deactivate(token)
 
 
 @bp.app_context_processor
-def _user_helpers():
-    return {"current_user": users.get(users.current()),
-            "all_users": users.all_users()}
+def _profile_helpers():
+    return {"current_profile": profiles.get(profiles.current()),
+            "all_profiles": profiles.all_profiles()}
 
 
 @bp.app_context_processor
@@ -349,8 +379,8 @@ def settings_page():
     context = _page_context()
     context["active"] = "settings"
     context["settings"] = pomo.settings()
-    context["user_colors"] = users.COLORS
-    context["ask_on_start"] = users._registry().get("ask_on_start", False)
+    context["profile_colors"] = profiles.COLORS
+    context["ask_on_start"] = profiles.ask_on_start_setting()
     context["spec"] = pomo.SETTING_SPEC
     context["summary"] = stats.summary("today")
     return render_template("pomodoro_settings.html", **context)
@@ -684,83 +714,83 @@ def api_biotop_map():
 # ---------------------------------------------------------------- Feed
 
 
-def _with_user(payload):
+def _with_profile(payload):
     """Feeds sagen, wessen Daten sie liefern (zusaetzliches Feld, der
     Vertrag activity/1 bleibt sonst unveraendert)."""
-    user = users.get(users.current()) or {}
-    payload.setdefault("meta", {})["user"] = {"id": user.get("id"),
-                                              "name": user.get("name")}
+    profile = profiles.get(profiles.current()) or {}
+    payload.setdefault("meta", {})["profile"] = {"id": profile.get("id"),
+                                                 "name": profile.get("name")}
     return payload
 
 
-# ---------------------------------------------------------------- Benutzer
+# ---------------------------------------------------------------- Profil
 
 
-def _user_row(user):
-    with users.as_user(user["id"]):
-        summary = pomo.user_summary()
-    return dict(user, **summary)
+def _profile_row(profile):
+    with profiles.as_profile(profile["id"]):
+        summary = pomo.profile_summary()
+    return dict(profile, **summary)
 
 
-@bp.route("/api/pomodoro/users")
-def api_users():
-    """Alle Benutzer mit laufendem Timer je Benutzer."""
-    return jsonify({"current": users.current(), "feed_user": users.feed_user_id(),
-                    "users": [_user_row(u) for u in users.all_users()]})
+@bp.route("/api/pomodoro/profiles")
+def api_profiles():
+    """Alle Profile mit laufendem Timer je Profil."""
+    return jsonify({"current": profiles.current(), "feed_profile": profiles.feed_profile_id(),
+                    "profiles": [_profile_row(u) for u in profiles.all_profiles()]})
 
 
-@bp.route("/api/pomodoro/users", methods=["POST"])
-def api_user_create():
+@bp.route("/api/pomodoro/profiles", methods=["POST"])
+def api_profile_create():
     data = request.get_json(silent=True) or {}
     try:
-        user = users.create(data.get("name"), data.get("color"))
+        profile = profiles.create(data.get("name"), data.get("color"))
     except ValueError as error:
         return jsonify({"ok": False, "reason": str(error)}), 400
     if data.get("copy_settings", True):
-        source = users.current()
-        with users.as_user(user["id"]):
+        source = profiles.current()
+        with profiles.as_profile(profile["id"]):
             pomo.copy_settings_from(source)
-    return jsonify({"ok": True, "user": _user_row(user)})
+    return jsonify({"ok": True, "profile": _profile_row(profile)})
 
 
-@bp.route("/api/pomodoro/users/<user_id>", methods=["POST"])
-def api_user_update(user_id):
+@bp.route("/api/pomodoro/profiles/<profile_id>", methods=["POST"])
+def api_profile_update(profile_id):
     data = request.get_json(silent=True) or {}
     try:
-        user = users.update(user_id, data.get("name"), data.get("color"))
+        profile = profiles.update(profile_id, data.get("name"), data.get("color"))
     except KeyError:
-        return jsonify({"ok": False, "reason": "Unbekannter Benutzer."}), 404
+        return jsonify({"ok": False, "reason": "Unbekanntes Profil."}), 404
     except ValueError as error:
         return jsonify({"ok": False, "reason": str(error)}), 400
-    return jsonify({"ok": True, "user": user})
+    return jsonify({"ok": True, "profile": profile})
 
 
-@bp.route("/api/pomodoro/users/<user_id>", methods=["DELETE"])
-def api_user_delete(user_id):
-    if user_id == users.current():
-        return jsonify({"ok": False, "reason": "Der aktive Benutzer kann nicht "
+@bp.route("/api/pomodoro/profiles/<profile_id>", methods=["DELETE"])
+def api_profile_delete(profile_id):
+    if profile_id == profiles.current():
+        return jsonify({"ok": False, "reason": "Das aktive Profil kann nicht "
                         "geloescht werden -- erst wechseln."}), 400
-    if not users.get(user_id):
-        return jsonify({"ok": False, "reason": "Unbekannter Benutzer."}), 404
-    if len(users.all_users()) <= 1:
-        return jsonify({"ok": False, "reason": "Der letzte Benutzer kann nicht "
+    if not profiles.get(profile_id):
+        return jsonify({"ok": False, "reason": "Unbekanntes Profil."}), 404
+    if len(profiles.all_profiles()) <= 1:
+        return jsonify({"ok": False, "reason": "Das letzte Profil kann nicht "
                         "geloescht werden."}), 400
-    if user_id == users.feed_user_id():
+    if profile_id == profiles.feed_profile_id():
         return jsonify({"ok": False, "reason": "Merge Requests liest die Daten "
-                        "dieses Benutzers -- er kann nicht geloescht werden."}), 400
-    pomo.forget_user(user_id)
+                        "dieses Profils -- es kann nicht geloescht werden."}), 400
+    pomo.forget_profile(profile_id)
     try:
-        moved = users.remove(user_id)
+        moved = profiles.remove(profile_id)
     except ValueError as error:
         return jsonify({"ok": False, "reason": str(error)}), 400
     return jsonify({"ok": True, "moved_to": moved})
 
 
-@bp.route("/api/pomodoro/users/settings", methods=["POST"])
-def api_users_settings():
+@bp.route("/api/pomodoro/profiles/settings", methods=["POST"])
+def api_profiles_settings():
     data = request.get_json(silent=True) or {}
     try:
-        flag = users.set_ask_on_start(bool(data.get("ask_on_start")))
+        flag = profiles.set_ask_on_start(bool(data.get("ask_on_start")))
     except ValueError as error:
         return jsonify({"ok": False, "reason": str(error)}), 400
     return jsonify({"ok": True, "ask_on_start": flag})
@@ -769,47 +799,46 @@ def api_users_settings():
 def _safe_next(target):
     """Nur Ziele innerhalb der App -- kein offener Redirect."""
     target = target or "/pomodoro"
-    if not target.startswith("/pomodoro") or target.startswith("/pomodoro/users"):
+    if not target.startswith("/pomodoro") or target.startswith("/pomodoro/profiles"):
         return "/pomodoro"
     return target
 
 
-@bp.route("/pomodoro/users")
-def users_page():
-    """Auswahl "Wer bist du?" (KONZEPT-BENUTZER.md, 6). Ohne Biotop und
+@bp.route("/pomodoro/profiles")
+def profiles_page():
+    """Auswahl "Wer bist du?" (KONZEPT-PROFILE.md, 6). Ohne Biotop und
     Mini-Timer -- noch steht nicht fest, wessen."""
     return render_template(
-        "pomodoro_users.html",
-        users_rows=[_user_row(u) for u in users.all_users()],
-        current_id=users.current(),
+        "pomodoro_profiles.html",
+        profiles_rows=[_profile_row(u) for u in profiles.all_profiles()],
+        current_id=profiles.current(),
         next_url=_safe_next(request.args.get("next")),
         palette_css=palette_mod.css_vars(palette_mod.default_palette()),
-        user_colors=users.COLORS)
+        profile_colors=profiles.COLORS)
 
 
-@bp.route("/api/pomodoro/user/switch", methods=["POST"])
-def api_user_switch():
+@bp.route("/api/pomodoro/profile/switch", methods=["POST"])
+def api_profile_switch():
     data = request.get_json(silent=True) or {}
-    user_id = data.get("id")
+    profile_id = data.get("id")
     try:
-        users.remember(user_id)
+        profiles.remember(profile_id)
     except KeyError:
-        return jsonify({"ok": False, "reason": "Unbekannter Benutzer."}), 404
+        return jsonify({"ok": False, "reason": "Unbekanntes Profil."}), 404
     except ValueError as error:
         return jsonify({"ok": False, "reason": str(error)}), 400
-    with users.as_user(user_id):
+    with profiles.as_profile(profile_id):
         running = pomo.get_state()["state"] != "idle"
-    previous = users.current()
-    with users.as_user(previous):
+    previous = profiles.current()
+    with profiles.as_profile(previous):
         left_running = pomo.get_state()["state"] in ("running", "paused")
-    response = jsonify({"ok": True, "user": users.get(user_id),
+    response = jsonify({"ok": True, "profile": profiles.get(profile_id),
                         "running": running,
-                        "left_running": left_running and previous != user_id})
-    response.set_cookie("pomo_user", user_id, max_age=365 * 24 * 3600,
-                        samesite="Lax")
+                        "left_running": left_running and previous != profile_id})
+    _set_profile_cookie(response, profile_id)
     # Fuer diesen App-Start ist die Frage "Wer bist du?" beantwortet.
     response.set_cookie(BOOT_COOKIE, BOOT_ID, samesite="Lax")
-    # Projekt-ids gelten nur in der Datenbank eines Benutzers.
+    # Projekt-ids gelten nur in der Datenbank eines Profils.
     response.delete_cookie("pomo_project")
     return response
 
@@ -818,7 +847,7 @@ def api_user_switch():
 def api_activity():
     """Activity Feed v1 fuer andere Anwendungen, siehe data/pomodoro_feed.py."""
     try:
-        return jsonify(_with_user(feed.read(since=request.args.get("since"),
+        return jsonify(_with_profile(feed.read(since=request.args.get("since"),
                                  start=request.args.get("start"),
                                  limit=request.args.get("limit", type=int))))
     except ValueError as error:
@@ -829,7 +858,7 @@ def api_activity():
 def api_journal_feed():
     """Activity Feed v1 fuer Aktivitaeten, siehe data/pomodoro_journal_feed.py."""
     try:
-        return jsonify(_with_user(journal_feed.read(since=request.args.get("since"),
+        return jsonify(_with_profile(journal_feed.read(since=request.args.get("since"),
                                          start=request.args.get("start"),
                                          limit=request.args.get("limit", type=int))))
     except ValueError as error:

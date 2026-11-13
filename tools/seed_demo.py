@@ -151,13 +151,22 @@ def seed():
 
 
 if __name__ == "__main__":
-    # Ohne --user der erste Benutzer (KONZEPT-BENUTZER.md, 7).
-    from data import users
-    wanted = sys.argv[sys.argv.index("--user") + 1] if "--user" in sys.argv else None
-    if wanted and not users.get(wanted):
-        sys.exit("Unbekannter Benutzer: %s" % wanted)
-    with users.as_user(wanted or users.default_id()):
-        if "--clear" in sys.argv:
+    import argparse
+
+    from data import profiles
+
+    # argparse statt sys.argv: Ein unbekannter Schalter (etwa das alte
+    # --user) bricht ab, statt still beim ersten Profil zu landen.
+    parser = argparse.ArgumentParser(description="Beispieldaten anlegen oder entfernen.")
+    parser.add_argument("--clear", action="store_true", help="Beispieldaten entfernen")
+    parser.add_argument("--profile", help="id oder Name (ohne: das erste Profil, "
+                                          "KONZEPT-PROFILE.md, 7)")
+    args = parser.parse_args()
+    profile = profiles.find(args.profile) if args.profile else profiles.get(profiles.default_id())
+    if not profile:
+        sys.exit("Unbekanntes Profil: %s" % args.profile)
+    with profiles.as_profile(profile["id"]):
+        if args.clear:
             clear()
         else:
             seed()

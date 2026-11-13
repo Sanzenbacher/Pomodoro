@@ -12,10 +12,10 @@ Abweichung vom Entwurf: Die Mehrzeit einer Sitzung, deren Ende im
 Nachfrage-Dialog gewählt wurde, erkennt die Tabelle am Event `recover_until`
 (statt am Event `cap`).
 
-**Mehrere Benutzer umgesetzt** (2026-11-12) — jeder Benutzer hat einen
+**Mehrere Profile umgesetzt** (2026-11-12) — jedes Profil hat einen
 eigenen Ordner mit eigener Datenbank, eigenen Projekten, eigenem Biotop,
 eigenen Einstellungen und eigenem Timer. Siehe
-[`KONZEPT-BENUTZER.md`](KONZEPT-BENUTZER.md); betrifft Abschnitt 4 und 7.
+[`KONZEPT-PROFILE.md`](KONZEPT-PROFILE.md); betrifft Abschnitt 4 und 7.
 
 Ein Pomodoro-Timer als 13. Feature-Modul von GameDevTools: konfigurierbare
 Phasenlängen, zuverlässige Erinnerung beim Ablauf, Projektzuordnung mit voller
@@ -113,13 +113,13 @@ darf nie an einer optionalen Dependency hängen. Der Toast ist das Kontext-Plus
 
 ## 4. Datenmodell
 
-Eigene Datenbank **je Benutzer** unter `storage/users/<id>/pomodoro.db`
+Eigene Datenbank **je Profil** unter `storage/profiles/<id>/pomodoro.db`
 (bis 2026-11-12: `storage/db/pomodoro.db`) mit eigenem `get_db()` /
 `init_db()` nach dem Muster von `data/classes.py` (`class_browser.db`).
-`get_db()` öffnet die Datenbank des aktuellen Benutzers aus
-`data/users.py`; die Tabellen unten haben deshalb keine `user_id`-Spalte.
-Das Verzeichnis der Benutzer steht in `storage/users.json`
-(siehe KONZEPT-BENUTZER.md, Abschnitt 3).
+`get_db()` öffnet die Datenbank des aktuellen Profils aus
+`data/profiles.py`; die Tabellen unten haben deshalb keine `profile_id`-Spalte.
+Das Verzeichnis der Profile steht in `storage/profiles.json`
+(siehe KONZEPT-PROFILE.md, Abschnitt 3).
 
 ```sql
 pomo_presets    id, label, work_min, short_break_min, long_break_min,
@@ -408,13 +408,13 @@ routes/pomodoro.py       GET  /pomodoro, /pomodoro/stats
                          CRUD /api/pomodoro/sessions/*      (inkl. Nachtrag offline)
                          GET  /api/pomodoro/export.csv
                          GET  /api/pomodoro/activity, /api/pomodoro/journal/feed
-                              ?user=<id|Name>, ohne: der Feed-Benutzer (Sascha)
-                         GET  /pomodoro/users               Auswahl "Wer bist du?"
-                         CRUD /api/pomodoro/users/*         Benutzer verwalten
-                         POST /api/pomodoro/user/switch     Benutzer wechseln (Cookie)
-                         POST /api/pomodoro/users/settings  Beim Start fragen
+                              ?profile=<id|Name>, ohne: das Feed-Profil (Sascha)
+                         GET  /pomodoro/profiles            Auswahl "Wer bist du?"
+                         CRUD /api/pomodoro/profiles/*      Profile verwalten
+                         POST /api/pomodoro/profile/switch  Profil wechseln (Cookie)
+                         POST /api/pomodoro/profiles/settings Beim Start fragen
 
-data/users.py            Benutzer: Verzeichnis, Ablageorte, Kontext, Umzug
+data/profiles.py         Profile: Verzeichnis, Ablageorte, Kontext, Umzug
 data/pomodoro.py         Timer-Logik, CRUD, Recovery        (keine Flask-Imports)
 data/pomodoro_stats.py   Aggregationen (getrennt, wird groß)
 data/pomodoro_notify.py  Watchdog-Thread + Ton/Toast
@@ -458,7 +458,7 @@ Bewusst langweilig: der bestehende Stack, plus **eine** optionale Dependency.
 
 **Bewusst dagegen entschieden:** WebSockets/SSE für den Timer (Polling alle 10 s
 plus lokaler Countdown genügt für einen Sekundenzeiger), ORM, APScheduler,
-Chart.js, Multi-User, Cloud-Sync, Idle-Erkennung (im WebView unzuverlässig).
+Chart.js, Multi-Profile, Cloud-Sync, Idle-Erkennung (im WebView unzuverlässig).
 
 ---
 

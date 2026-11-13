@@ -5,9 +5,22 @@ __pycache__/
 storage/db/*.db
 storage/db/*.db-*
 
-# Mehrere Benutzer (KONZEPT-BENUTZER.md): je Benutzer ein Ordner
-storage/users.json
-storage/users.json.tmp
-storage/users/
+# Mehrere Profile (KONZEPT-PROFILE.md): je Profil ein Ordner
+storage/profiles.json
+storage/profiles.json.tmp
+storage/profiles/
 storage/geloescht/
+storage/vor-profilen-*/
+storage/import-*/
+
+# Ablage von vor der Umbenennung Benutzer -> Profil (wird beim Start umgezogen)
+storage/users.json
+storage/users.json.*
+storage/users/
 storage/vor-benutzern-*/
+
+# Exporte von tools/port_data.py
+pomodoro-export-*.zip
+
+# Lokale Python-Umgebung, legt start-linux.sh bei Bedarf an
+.venv/

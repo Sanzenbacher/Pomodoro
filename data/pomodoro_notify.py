@@ -15,7 +15,7 @@ import subprocess
 import sys
 import threading
 
-from data import users
+from data import profiles
 from data.appconfig import POMO, ROOT
 
 NOTIFY = POMO["notify"]
@@ -24,7 +24,7 @@ _toaster = None
 _toaster_tried = False
 
 #: Wird von der Oberflaeche abgeholt (Ebene 3) und dann geleert -- je
-#: Benutzer, damit eine Nachfrage nur bei dem ankommt, dem sie gehoert.
+#: Profil, damit eine Nachfrage nur bei dem ankommt, dem sie gehoert.
 _pending = {}
 _pending_lock = threading.Lock()
 
@@ -100,12 +100,12 @@ def _toast_powershell(title, body):
 
 
 def _named(title):
-    """Mit mehr als einem Benutzer: "Lena · Arbeitsphase fertig"."""
+    """Mit mehr als einem Profil: "Lena · Arbeitsphase fertig"."""
     try:
-        if len(users.all_users()) > 1:
-            user = users.get(users.current())
-            if user:
-                return "%s · %s" % (user["name"], title)
+        if len(profiles.all_profiles()) > 1:
+            profile = profiles.get(profiles.current())
+            if profile:
+                return "%s · %s" % (profile["name"], title)
     except Exception:
         pass
     return title
@@ -113,7 +113,7 @@ def _named(title):
 
 def _toast(title, body):
     """Toast im Hintergrund; den Namen vorher holen -- der Thread hat
-    keinen Benutzer-Kontext."""
+    keinen Profil-Kontext."""
     threading.Thread(target=show_toast, args=(_named(title), body),
                      daemon=True).start()
 
@@ -216,11 +216,11 @@ def overtime_capped(payload):
 
 def _push(alert):
     with _pending_lock:
-        _pending.setdefault(users.current(), []).append(alert)
+        _pending.setdefault(profiles.current(), []).append(alert)
 
 
 def take_pending():
     """Die Seite fragt beim Pollen nach und bekommt jeden Alarm genau einmal
-    -- nur die des aktuellen Benutzers."""
+    -- nur die des aktuellen Profils."""
     with _pending_lock:
-        return _pending.pop(users.current(), [])
+        return _pending.pop(profiles.current(), [])

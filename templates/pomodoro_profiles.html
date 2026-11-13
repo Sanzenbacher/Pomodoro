@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pomodoro.css') }}">
 {#
   Eigenstaendig statt base.html: Noch steht nicht fest, wessen Biotop,
-  Projektfarben und Timer gelten (KONZEPT-BENUTZER.md, 6).
+  Projektfarben und Timer gelten (KONZEPT-PROFILE.md, 6).
 #}
 <style>
 #pomo-root {
@@ -30,9 +30,9 @@
     <div class="cg chooser-title">Wer <em>bist</em> du?</div>
 
     <div class="chooser-grid" id="chooser-grid">
-      {% for u in users_rows %}
-      <button class="chooser-tile {{ 'last' if u.id == current_id }}" type="button" data-user="{{ u.id }}">
-        <span class="user-dot chooser-dot" style="background: {{ u.color }}">{{ u.name[:1] | upper }}</span>
+      {% for u in profiles_rows %}
+      <button class="chooser-tile {{ 'last' if u.id == current_id }}" type="button" data-profile="{{ u.id }}">
+        <span class="profile-dot chooser-dot" style="background: {{ u.color }}">{{ u.name[:1] | upper }}</span>
         <span class="chooser-name cg">{{ u.name }}</span>
         <span class="chooser-meta">
           {% if u.state == 'running' %}Timer läuft
@@ -46,7 +46,7 @@
     </div>
 
     <form class="chooser-new" id="chooser-new" autocomplete="off">
-      <input class="field" id="chooser-name" maxlength="40" placeholder="+ Neuer Benutzer">
+      <input class="field" id="chooser-name" maxlength="40" placeholder="+ Neues Profil">
       <button class="btn small" type="submit">ANLEGEN</button>
     </form>
     <div class="note chooser-error" id="chooser-error" hidden></div>
@@ -74,24 +74,24 @@
     function fail(e) { error.textContent = e.message; error.hidden = false; }
 
     function choose(id) {
-        return call('/api/pomodoro/user/switch', { id: id })
+        return call('/api/pomodoro/profile/switch', { id: id })
             .then(function () { window.location.href = next; })
             .catch(fail);
     }
 
     document.getElementById('chooser-grid').addEventListener('click', function (event) {
-        var tile = event.target.closest('[data-user]');
-        if (tile) { choose(tile.getAttribute('data-user')); }
+        var tile = event.target.closest('[data-profile]');
+        if (tile) { choose(tile.getAttribute('data-profile')); }
     });
 
     document.getElementById('chooser-new').addEventListener('submit', function (event) {
         event.preventDefault();
         var name = document.getElementById('chooser-name').value.trim();
         if (!name) { return; }
-        // Neue Benutzer starten hier mit den Vorgaben: Von wem sollten sie
+        // Neue Profile starten hier mit den Vorgaben: Von wem sollten sie
         // Einstellungen erben, solange niemand gewaehlt ist?
-        call('/api/pomodoro/users', { name: name, copy_settings: false })
-            .then(function (data) { return choose(data.user.id); })
+        call('/api/pomodoro/profiles', { name: name, copy_settings: false })
+            .then(function (data) { return choose(data.profile.id); })
             .catch(fail);
     });
 }());

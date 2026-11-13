@@ -7,13 +7,14 @@ variante 08 „Sinnlich & Künstlerisch".
 Eigenständig lauffähig, aber so geschnitten, dass das Modul als 13. Feature
 nach GameDevTools wandern kann.
 
-**Doppelklick auf `start.bat`.** Das Skript sucht Python, ergänzt fehlende
+**Windows: Doppelklick auf `start-windows.bat`, Linux: `./start-linux.sh`.** Das Skript sucht Python, ergänzt fehlende
 Abhängigkeiten, liest Adresse und Port aus `config.yaml` und merkt, wenn der
 Server schon läuft — dann öffnet es nur den Browser statt mit
 „address already in use“ abzubrechen. Argumente reicht es durch:
 
 ```bash
-start.bat --window
+start-windows.bat --window     # Windows
+./start-linux.sh --window       # Linux
 ```
 
 Oder direkt, wenn Python ohnehin eingerichtet ist:
@@ -31,7 +32,9 @@ Beides öffnet <http://127.0.0.1:5333/pomodoro>. Weitere Schalter:
 | `python app.py --no-browser` | Server ohne Browserstart |
 | `python tools/seed_demo.py` | ein halbes Jahr Beispieldaten anlegen |
 | `python tools/seed_demo.py --clear` | Beispieldaten wieder entfernen |
-| `python tools/seed_demo.py --user <id>` | dasselbe für einen anderen Benutzer (ohne: der erste) |
+| `python tools/seed_demo.py --profile <id>` | dasselbe für ein anderes Profil (ohne: das erste) |
+| `python tools/port_data.py export` | alle Profile in eine ZIP-Datei packen |
+| `python tools/port_data.py import <zip\|ordner>` | Profile aus ZIP oder kopiertem `storage/` hinzufügen |
 
 Läuft die App schon, bricht ein zweiter Start von `app.py` ab, bevor er
 Daten anfasst.
@@ -114,21 +117,40 @@ Auto-Start je Richtung, Standard setzen, anlegen und loeschen. Jedes Preset
 zeigt seinen Zyklus als massstaeblichen Balken -- die Zahlen allein sagen
 wenig. Alles speichert beim Verlassen des Feldes und gilt sofort.
 
-**Mehrere Benutzer.** Jeder Benutzer hat eigene Projekte und Aktivitäten,
+**Mehrere Profile.** Jedes Profil hat eigene Projekte und Aktivitäten,
 ein eigenes Journal, ein eigenes Biotop, eigene Einstellungen und Presets
 und einen eigenen Timer — technisch ein eigener Ordner mit eigener
-Datenbank unter `storage/users/<id>/`. Verwaltet wird unter
-**Einstellungen → Benutzer** (anlegen, auf Wunsch mit den eigenen
+Datenbank unter `storage/profiles/<id>/`. Verwaltet wird unter
+**Einstellungen → Profile** (anlegen, auf Wunsch mit den eigenen
 Einstellungen, umbenennen, Farbe, löschen nach Eintippen des Namens).
-Ab zwei Benutzern steht oben rechts ein Chip zum schnellen Wechseln; ein
+Ab zwei Profilen steht oben rechts ein Chip zum schnellen Wechseln; ein
 laufender Timer läuft dabei weiter, sein Toast nennt den Namen. Auf Wunsch
 fragt die App nach jedem Start zuerst „Wer bist du?". Die Feeds für
-Merge Requests liefern ohne Parameter immer Saschas Daten (`feed_user` in
-`storage/users.json`), mit `?user=Lena` die eines anderen. Beim ersten
+Merge Requests liefern ohne Parameter immer Saschas Daten (`feed_profile` in
+`storage/profiles.json`), mit `?profile=Lena` die eines anderen. Beim ersten
 Start mit dieser Fassung zogen die bisherigen Daten in den Ordner von
-„Sascha" (Name aus `config.yaml`, `users.first_name`); die alten Ordner
-liegen unter `storage/vor-benutzern-<datum>/`. Siehe
-[`KONZEPT-BENUTZER.md`](KONZEPT-BENUTZER.md).
+„Sascha" (Name aus `config.yaml`, `profiles.first_name`); die alten Ordner
+liegen unter `storage/vor-profilen-<datum>/`. Siehe
+[`KONZEPT-PROFILE.md`](KONZEPT-PROFILE.md).
+
+**Auf einen anderen Rechner umziehen.** Die Profile liegen in `storage/` und
+damit bewusst nicht im Repository. Mitnehmen geht so (Server jeweils vorher
+beenden; unter Linux `.venv/bin/python` statt `python`, sobald
+`start-linux.sh` eine `.venv` angelegt hat):
+
+```bash
+python tools/port_data.py export                 # alter Rechner: pomodoro-export-<datum>.zip
+python tools/port_data.py import pomodoro-export-20261113-120000.zip   # neuer Rechner
+```
+
+Der Import fügt hinzu und löscht nie: Gibt es ein Profil gleichen Namens
+schon (etwa das beim ersten Start angelegte leere „Sascha"), heißt das
+importierte „Sascha (2)" — das leere lässt sich danach unter Einstellungen
+löschen. Statt einer ZIP-Datei nimmt `import` auch einen kopierten
+`storage/`-Ordner, auch in den älteren Ablagen (`users.json` + `users/`
+oder `db/pomodoro.db`). Liegt beim Start noch eine Ablage von vor der
+Umbenennung Benutzer → Profil (`storage/users/`), zieht die App sie
+selbst nach `storage/profiles/` um.
 
 **Projektfarben.** Jedes Projekt bringt ein Bild mit; daraus entsteht die
 Farbwelt des Timers. Verwaltung mit Drag-and-drop, Rollenübersicht,
@@ -140,11 +162,12 @@ Schriftwahl und Kollisionswarnung bei zu ähnlichen Projekten.
 ## Aufbau
 
 ```
-start.bat                       Starter fuer Windows (Doppelklick)
+start-windows.bat               Starter fuer Windows (Doppelklick)
+start-linux.sh                  Starter fuer Linux (./start-linux.sh)
 app.py                          Flask-App, Blueprint, optionales Fenster
 config.yaml                     Tagesziel, Tagesbeginn, Erinnerung, Schalter
 
-data/users.py                   Benutzer: Verzeichnis, Ablageorte, Kontext, Umzug
+data/profiles.py                Profile: Verzeichnis, Ablageorte, Kontext, Umzug
 data/pomodoro.py                Timer-Logik, CRUD, Recovery  (keine Flask-Importe)
 data/pomodoro_stats.py          Aggregationen und SVG-Diagramme
 data/pomodoro_journal.py        Aktivitäten, Gefühle, Tagesverlauf
@@ -163,8 +186,8 @@ templates/pomodoro_stats.html   Statistik
 templates/pomodoro_journal.html Journal
 templates/pomodoro_biotop.html  Biotop
 templates/pomodoro_projects.html Projekte & Aktivitäten, Bilder, Paletten
-templates/pomodoro_settings.html Benutzer, Tagesziel, Tagesbeginn, Phasenlaengen
-templates/pomodoro_users.html   Auswahl "Wer bist du?" beim Start
+templates/pomodoro_settings.html Profil, Tagesziel, Tagesbeginn, Phasenlaengen
+templates/pomodoro_profiles.html Auswahl "Wer bist du?" beim Start
 
 static/css/pomodoro.css         Variante 08, alles Farbige über CSS-Variablen
 static/js/pomodoro_widget.js    läuft auf jeder Seite: Polling, Mini-Timer, Overlay
@@ -175,16 +198,17 @@ static/js/pomodoro_biotop_bg.js Biotop als Hintergrund jeder Seite
 static/js/pomodoro_biotop_page.js Biotop-Seite, Galerie, Zuordnung
 static/js/pomodoro_projects.js  Verwaltung der Kategorien
 static/js/pomodoro_settings.js  Einstellungen
-static/js/pomodoro_users.js     Benutzerwechsel (Kopfzeile) und -verwaltung
+static/js/pomodoro_profiles.js  Profilwechsel (Kopfzeile) und -verwaltung
 static/js/pomodoro_palette.js   Pixel lesen, k-Means in OKLab
 static/audio/bell.wav           erzeugt, siehe unten
 
-storage/users.json              Verzeichnis der Benutzer, Feed-Benutzer
-storage/users/<id>/pomodoro.db  Datenbank je Benutzer, nicht im Repository: selbst sichern
-storage/users/<id>/projects/    Projektbilder und Verkleinerungen je Benutzer
-storage/users/<id>/backups/     Sicherungen vor Migrationen
-storage/geloescht/              gelöschte Benutzer, von Hand wiederherstellbar
+storage/profiles.json           Verzeichnis der Profile, Feed-Profil
+storage/profiles/<id>/pomodoro.db  Datenbank je Profil, nicht im Repository: selbst sichern
+storage/profiles/<id>/projects/    Projektbilder und Verkleinerungen je Profil
+storage/profiles/<id>/backups/     Sicherungen vor Migrationen
+storage/geloescht/              gelöschte Profile, von Hand wiederherstellbar
 tools/seed_demo.py              Beispieldaten
+tools/port_data.py              Profile exportieren / importieren (Rechnerwechsel)
 ```
 
 Der Klingelton ist nicht heruntergeladen, sondern gerechnet: ein
@@ -216,9 +240,9 @@ ohne Pillow und ohne NumPy aus.
 
 Vier Stellen, alles andere wandert unverändert mit:
 
-1. Blueprint in `app.py` registrieren, dazu `users.migrate()`,
-   `users.ensure_feed_user()` und `pomodoro.init_db()` je Benutzer (siehe
-   `create_app()`). Ohne eigene Benutzer in GameDevTools bleibt es bei
+1. Blueprint in `app.py` registrieren, dazu `profiles.migrate()`,
+   `profiles.ensure_feed_profile()` und `pomodoro.init_db()` je Profil (siehe
+   `create_app()`). Ohne eigene Profile in GameDevTools bleibt es bei
    einem — der Chip in der Kopfzeile erscheint dann nie.
 2. Sidebar-Link unter **Development**.
 3. Metriken in `helpers._gather_all_metrics()` für Overview und Achievements.

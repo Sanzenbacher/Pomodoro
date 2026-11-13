@@ -3,9 +3,9 @@ rem ===========================================================================
 rem  Pomodoro starten.
 rem
 rem  Doppelklick genuegt. Argumente werden durchgereicht, zum Beispiel:
-rem      start.bat --window
-rem      start.bat --page /pomodoro/stats
-rem      start.bat --no-browser
+rem      start-windows.bat --window
+rem      start-windows.bat --page /pomodoro/stats
+rem      start-windows.bat --no-browser
 rem
 rem  Das Skript sucht Python, ergaenzt fehlende Abhaengigkeiten und merkt,
 rem  wenn der Server schon laeuft -- dann oeffnet es nur den Browser.

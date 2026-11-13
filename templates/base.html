@@ -80,27 +80,27 @@
     </a>
 
     {#
-      Benutzerwechsel (KONZEPT-BENUTZER.md, 6). Erst ab zwei Benutzern
+      Profilwechsel (KONZEPT-PROFILE.md, 6). Erst ab zwei Profilen
       sichtbar -- wer allein ist, sieht nichts Neues. Verwaltet wird unter
       Einstellungen.
     #}
-    {% if current_user and all_users | length > 1 %}
-    <div class="user-switch" id="user-switch">
-      <button class="user-chip" id="user-chip" type="button" aria-haspopup="true"
-              aria-expanded="false" title="Benutzer wechseln">
-        <span class="user-dot" style="background: {{ current_user.color }}">{{ current_user.name[:1] | upper }}</span>
-        <span class="user-name">{{ current_user.name }}</span>
+    {% if current_profile and all_profiles | length > 1 %}
+    <div class="profile-switch" id="profile-switch">
+      <button class="profile-chip" id="profile-chip" type="button" aria-haspopup="true"
+              aria-expanded="false" title="Profil wechseln">
+        <span class="profile-dot" style="background: {{ current_profile.color }}">{{ current_profile.name[:1] | upper }}</span>
+        <span class="profile-name">{{ current_profile.name }}</span>
       </button>
-      <div class="user-menu" id="user-menu" role="menu" hidden>
-        {% for u in all_users %}
-        <button class="user-item {{ 'on' if u.id == current_user.id }}" type="button"
-                role="menuitem" data-user="{{ u.id }}">
-          <span class="user-dot small" style="background: {{ u.color }}">{{ u.name[:1] | upper }}</span>
-          <span class="user-item-name">{{ u.name }}</span>
-          <span class="user-item-state" data-state-for="{{ u.id }}">{{ '✓' if u.id == current_user.id }}</span>
+      <div class="profile-menu" id="profile-menu" role="menu" hidden>
+        {% for u in all_profiles %}
+        <button class="profile-item {{ 'on' if u.id == current_profile.id }}" type="button"
+                role="menuitem" data-profile="{{ u.id }}">
+          <span class="profile-dot small" style="background: {{ u.color }}">{{ u.name[:1] | upper }}</span>
+          <span class="profile-item-name">{{ u.name }}</span>
+          <span class="profile-item-state" data-state-for="{{ u.id }}">{{ '✓' if u.id == current_profile.id }}</span>
         </button>
         {% endfor %}
-        <a class="user-manage" href="/pomodoro/settings#benutzer">Benutzer verwalten …</a>
+        <a class="profile-manage" href="/pomodoro/settings#profile">Profile verwalten …</a>
       </div>
     </div>
     {% endif %}
@@ -198,7 +198,7 @@
 
 <script src="{{ url_for('static', filename='js/pomodoro_widget.js') }}"></script>
 <script src="{{ url_for('static', filename='js/pomodoro_biotop.js') }}"></script>
-<script src="{{ url_for('static', filename='js/pomodoro_users.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pomodoro_profiles.js') }}"></script>
 {% if biotop_bg %}<script src="{{ url_for('static', filename='js/pomodoro_biotop_bg.js') }}"></script>{% endif %}
 {% block scripts %}{% endblock %}
 </body>
