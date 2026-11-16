@@ -193,6 +193,11 @@
             feed.title = 'Andere Anwendungen (Merge Requests) lesen ohne ?profile= diese Daten.';
             meta.appendChild(feed);
         }
+        if (profile.test) {
+            var test = el('span', 'profile-feed', 'TEST · NUR LOKAL');
+            test.title = 'Nur auf localhost. Testknöpfe im Biotop, nicht löschbar.';
+            meta.appendChild(test);
+        }
         line.appendChild(meta);
 
         line.appendChild(el('div', 'profile-row-state', stateText(profile)));
@@ -204,7 +209,7 @@
             var go = el('button', 'btn small', 'WECHSELN');
             go.addEventListener('click', function () { switchTo(profile.id); });
             actions.appendChild(go);
-            if (count > 1 && profile.id !== feedProfile) {
+            if (count > 1 && profile.id !== feedProfile && !profile.test) {
                 var del = el('button', 'btn small quiet', 'LÖSCHEN');
                 del.addEventListener('click', function () { confirmDelete(line, profile); });
                 actions.appendChild(del);
@@ -256,7 +261,8 @@
             current = data.current;
             feedProfile = data.feed_profile;
             list.innerHTML = '';
-            data.profiles.forEach(function (profile) { list.appendChild(row(profile, data.profiles.length)); });
+            var real = data.profiles.filter(function (p) { return !p.test; }).length;
+            data.profiles.forEach(function (profile) { list.appendChild(row(profile, real)); });
             askRow.hidden = data.profiles.length < 2;
             renderColors(data.profiles.map(function (u) { return u.color; }));
         }).catch(function (error) { toast(error.message); });

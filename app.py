@@ -45,6 +45,8 @@ def create_app():
         profiles.migrate()
         # Wessen Daten Merge Requests ohne ?profile= liest -- fest eintragen.
         profiles.ensure_feed_profile()
+        # Nur auf localhost: Testprofil mit Testknoepfen im Biotop.
+        profiles.ensure_test_profile()
         # Jedes Profil einmal oeffnen: Schema, Migration und Recovery -- damit
         # auch der Timer eines gerade nicht gewaehlten Profils weiterlaeuft.
         for profile in profiles.all_profiles():

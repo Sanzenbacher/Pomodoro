@@ -20,8 +20,10 @@ Siehe KONZEPT.md, Abschnitt 13. Keine Flask-Importe.
 """
 
 import calendar
+import random
 import threading
-from datetime import date
+import uuid
+from datetime import date, timedelta
 
 from data import pomodoro as pomo
 
@@ -126,8 +128,10 @@ def _ensure_map(conn, target_id, theme, cache):
 
 def _sync(conn, first=False):
     """Neue Eintraege bekommen ihre Pflanzen, verschwundene verlieren sie."""
+    # Testpflanzen (source_kind 'test') haben keinen Eintrag dahinter und
+    # bleiben, bis clear_test_plants() sie entfernt.
     known = {(r["source_kind"], r["source_id"]) for r in conn.execute(
-        "SELECT source_kind, source_id FROM pomo_biotop_plants")}
+        "SELECT source_kind, source_id FROM pomo_biotop_plants WHERE source_kind != 'test'")}
     present = set()
     cache = {}
     # Beim allerersten Abgleich ist nichts davon neu: Der Bestand soll beim
@@ -214,14 +218,15 @@ def _entries(conn, month=None):
     """Alle Pflanzen, zeitlich sortiert, mit Monat und Tag nach day_of."""
     rows = conn.execute(
         "SELECT b.source_kind, b.source_id, b.garten, b.wald, b.created_at,"
-        " COALESCE(s.started_at, j.at) AS at,"
+        " COALESCE(s.started_at, j.at, b.created_at) AS at,"
         " CASE WHEN b.source_kind = 'session' THEN (s.actual_seconds + 30) / 60"
         " ELSE j.minutes END AS minutes,"
         " COALESCE(s.note, j.note) AS note,"
         " CASE WHEN b.source_kind = 'session' THEN s.focus_rating ELSE j.mood END AS rating,"
         " CASE WHEN b.source_kind = 'session' THEN COALESCE(s.project_id, 0)"
         " ELSE j.project_id END AS project_id,"
-        " COALESCE(p.label, j.label, 'Ohne Projekt') AS label"
+        " CASE WHEN b.source_kind = 'test' THEN 'Testpflanze'"
+        " ELSE COALESCE(p.label, j.label, 'Ohne Projekt') END AS label"
         " FROM pomo_biotop_plants b"
         " LEFT JOIN pomo_sessions s ON b.source_kind = 'session' AND s.id = b.source_id"
         " LEFT JOIN pomo_journal j ON b.source_kind = 'journal' AND j.id = b.source_id"
@@ -248,7 +253,7 @@ def _entries(conn, month=None):
             "who": r["label"],
             # Woher die Pflanze kommt (Arbeitsphase im Timer oder Aktivitaet
             # im Journal) und wie lange das ging, fuer die Info zur Pflanze.
-            "via": "timer" if r["source_kind"] == "session" else "journal",
+            "via": {"session": "timer", "test": "test"}.get(r["source_kind"], "journal"),
             "min": r["minutes"],
             # Notiz und Bewertung des Eintrags (Fokus im Timer, Stimmung im
             # Journal, jeweils 1 bis 5) und sein Tag fuer Links dorthin.
@@ -362,3 +367,57 @@ def set_plant(kind, target_id, theme, plant):
             " DO UPDATE SET plant = excluded.plant, updated_at = excluded.updated_at",
             (target_id, theme, plant, pomo.iso(pomo.now())))
     _run(write)
+
+
+# ---------------------------------------------------------------- Testpflanzen
+
+#: Hoechstens so viele Testpflanzen auf einmal.
+TEST_MAX = 500
+
+
+def spawn_test_plants(theme, count, plant=None, spread=True):
+    """Testprofil: count Pflanzen im laufenden Monat setzen, ohne Eintrag
+    dahinter. plant = feste Sorte, sonst zufaellig je Pflanze. Die Sorte im
+    anderen Thema ist immer zufaellig. spread: Tage 1 bis heute verteilt,
+    sonst alle jetzt (wachsen dann sichtbar). Schaltet das Thema des Monats
+    auf theme, damit man sieht, was entsteht."""
+    if theme not in THEMES:
+        raise ValueError("Unbekanntes Thema.")
+    if plant is not None and plant not in PLANTS[theme]:
+        raise ValueError("Unbekannte Pflanze.")
+    try:
+        count = int(count)
+    except (TypeError, ValueError):
+        raise ValueError("Bitte eine Anzahl angeben.") from None
+    if not 1 <= count <= TEST_MAX:
+        raise ValueError("Anzahl zwischen 1 und %d." % TEST_MAX)
+    other = "wald" if theme == "garten" else "garten"
+    month = current_month()
+
+    def write(conn):
+        now = pomo.now()
+        # Beginn des Monats nach day_of: Tag 1 plus Tagesbeginn, damit jeder
+        # Zeitpunkt sicher im laufenden Monat liegt.
+        start = pomo.local_midnight(date.fromisoformat(month + "-01")) + timedelta(
+            hours=int(pomo.setting("day_start_hour")))
+        for _ in range(count):
+            picked = {theme: plant or random.choice(PLANTS[theme]),
+                      other: random.choice(PLANTS[other])}
+            if spread:
+                moment = start + (now - start) * random.random()
+                if pomo.day_of(moment)[:7] != month:
+                    moment = now
+            else:
+                moment = now
+            conn.execute("INSERT INTO pomo_biotop_plants VALUES ('test', ?, ?, ?, ?)",
+                         (uuid.uuid4().hex, picked["garten"], picked["wald"],
+                          pomo.iso(moment)))
+        _theme(conn, month)
+        conn.execute("UPDATE pomo_biotop_months SET theme = ? WHERE month = ?", (theme, month))
+    _run(write)
+
+
+def clear_test_plants():
+    """Alle Testpflanzen entfernen; gibt die Zahl zurueck."""
+    return _run(lambda conn: conn.execute(
+        "DELETE FROM pomo_biotop_plants WHERE source_kind = 'test'").rowcount)

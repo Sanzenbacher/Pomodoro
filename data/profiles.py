@@ -32,7 +32,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 
 from data import db
-from data.appconfig import ACCOUNTS, CONFIG, hosted, storage_root
+from data.appconfig import ACCOUNTS, CONFIG, hosted, server_address, storage_root
 
 STORAGE = storage_root()
 REGISTRY = os.path.join(STORAGE, "profiles.json")
@@ -46,6 +46,37 @@ OLD_DIR = os.path.join(STORAGE, "users")
 LEGACY_ID = "u-legacy"
 LEGACY_PROFILE = {"id": LEGACY_ID, "name": "Ich", "color": "#c8643b",
                   "created_at": None}
+
+
+#: Testprofil (nur lokal auf localhost): feste id, nie loeschbar, ohne
+#: Zaehlung bei max_profiles. Die id ist kein Hex -- new_id() trifft sie nie.
+TEST_ID = "p-test"
+TEST_PROFILE = {"id": TEST_ID, "name": "Test (lokal)", "color": "#7a7a3a",
+                "created_at": None, "test": True}
+LOOPBACK = ("127.0.0.1", "localhost", "::1")
+
+
+def test_available():
+    """Testprofil nur im lokalen Betrieb, der nur auf localhost lauscht --
+    nie gehostet, nie auf 0.0.0.0 oder einer Netzadresse."""
+    return not hosted() and server_address()[0] in LOOPBACK
+
+
+def is_test(profile_id):
+    return profile_id == TEST_ID
+
+
+def ensure_test_profile():
+    """Beim Start: Testprofil eintragen, falls es fehlt. Ohne profiles.json
+    (Umzug nicht abgeschlossen) nicht -- dann gilt das Altprofil allein."""
+    if not test_available() or not os.path.exists(REGISTRY):
+        return None
+    data = _registry()
+    if not any(is_test(p["id"]) for p in data["profiles"]):
+        data["profiles"].append(dict(TEST_PROFILE,
+                                     created_at=datetime.now(timezone.utc).isoformat()))
+        save_registry(data)
+    return TEST_ID
 
 
 def first_name():
@@ -157,6 +188,10 @@ def _registry():
     data.setdefault("profiles", [])
     data.setdefault("last_profile", None)
     data.setdefault("ask_on_start", False)
+    if not test_available():
+        # Nicht auf localhost: Das Testprofil gibt es dann nicht (sein Ordner
+        # bleibt liegen und ist beim naechsten Start auf localhost wieder da).
+        data["profiles"] = [p for p in data["profiles"] if not is_test(p["id"])]
     if not data["profiles"]:
         data["profiles"] = [dict(LEGACY_PROFILE)]
     return data
@@ -230,11 +265,12 @@ def feed_profile_id():
     gilt das Profil mit dem Namen aus config.yaml, sonst das erste.
     """
     data = _registry()
-    ids = [p["id"] for p in data["profiles"]]
+    real = _real(data) or data["profiles"]
+    ids = [p["id"] for p in real]
     if data.get("feed_profile") in ids:
         return data["feed_profile"]
     wanted = first_name().lower()
-    for profile in data["profiles"]:
+    for profile in real:
         if profile["name"].lower() == wanted:
             return profile["id"]
     return ids[0]
@@ -268,6 +304,8 @@ def set_feed_profile(profile_id):
     data = _editable()
     if not any(p["id"] == profile_id for p in data["profiles"]):
         raise KeyError(profile_id)
+    if is_test(profile_id):
+        raise ValueError("Merge Requests liest nie das Testprofil.")
     data["feed_profile"] = profile_id
     save_registry(data)
 
@@ -331,6 +369,11 @@ def _clean_color(color, data):
     return free[0] if free else COLORS[len(data["profiles"]) % len(COLORS)]
 
 
+def _real(data):
+    """Profile ohne das Testprofil."""
+    return [p for p in data["profiles"] if not is_test(p["id"])]
+
+
 def _editable():
     if encrypted():
         return _registry()
@@ -344,7 +387,7 @@ def create(name, color=None):
     """Legt das Profil im Verzeichnis an. Datenbank und Ordner entstehen
     beim ersten get_db() (Standardprojekte, leeres Biotop)."""
     data = _editable()
-    if len(data["profiles"]) >= max_profiles():
+    if len(_real(data)) >= max_profiles():
         raise ValueError("Ein Konto hat höchstens %d Profile." % max_profiles())
     profile = {"id": new_id({p["id"] for p in data["profiles"]}),
                "name": _clean_name(name, data),
@@ -374,7 +417,9 @@ def remove(profile_id):
     data = _editable()
     if not any(p["id"] == profile_id for p in data["profiles"]):
         raise KeyError(profile_id)
-    if len(data["profiles"]) <= 1:
+    if is_test(profile_id):
+        raise ValueError("Das Testprofil kann nicht geloescht werden.")
+    if len(_real(data)) <= 1:
         raise ValueError("Das letzte Profil kann nicht geloescht werden.")
     if not hosted() and data.get("feed_profile") == profile_id:
         raise ValueError("Merge Requests liest die Daten dieses Profils -- "

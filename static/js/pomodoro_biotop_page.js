@@ -40,6 +40,7 @@
 
     function viaText(e) {
         const min = e.min ? e.min + ' min' : '';
+        if (e.via === 'test') { return 'Testpflanze aus dem Testprofil'; }
         const what = e.via === 'timer' ? 'Arbeitsphase im Timer' : 'Aktivität im Journal';
         return min ? min + ' ' + what : what;
     }
@@ -71,7 +72,7 @@
     // Link zum Eintrag: Arbeitsphasen in die Sitzungstabelle der Statistik,
     // Aktivitaeten an ihren Tag im Journal (das zeigt die letzten n Tage).
     function entryLink(e) {
-        if (!e.day) { return ''; }
+        if (!e.day || e.via === 'test') { return ''; }
         if (e.via === 'timer') {
             return '<a class="textbtn" href="/pomodoro/stats?range=all&day=' + e.day + '#sitzungen">IN DER STATISTIK</a>';
         }
@@ -370,4 +371,7 @@
     $('bio-day').max = cur.day; $('bio-day').value = cur.day;
     render();
     renderMap();
+
+    // Fuer die Testknoepfe (pomodoro_biotop_test.js).
+    window.BiotopPage = { world, render };
 })();

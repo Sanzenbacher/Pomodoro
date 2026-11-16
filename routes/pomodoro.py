@@ -358,6 +358,8 @@ def biotop_page():
     context["biotop_bg"] = None
     context["gallery"] = biotop.gallery()
     context["targets"] = biotop.targets()
+    if _test_tools():
+        context["bio_test"] = {"plants": biotop.PLANTS, "max": biotop.TEST_MAX}
     return render_template("pomodoro_biotop.html", **context)
 
 
@@ -763,6 +765,33 @@ def api_biotop_map():
     return jsonify({"ok": True, "targets": biotop.targets()})
 
 
+def _test_tools():
+    """Testknoepfe nur fuers Testprofil, nur lokal auf localhost und nur fuer
+    Anfragen von diesem Rechner."""
+    return (profiles.test_available() and profiles.is_test(profiles.current())
+            and request.remote_addr in ("127.0.0.1", "::1"))
+
+
+@bp.route("/api/pomodoro/biotop/test/spawn", methods=["POST"])
+def api_biotop_test_spawn():
+    if not _test_tools():
+        return jsonify({"ok": False, "reason": "Nur im Testprofil."}), 404
+    data = request.get_json(silent=True) or {}
+    try:
+        biotop.spawn_test_plants(data.get("theme"), data.get("count"),
+                                 data.get("plant") or None, bool(data.get("spread", True)))
+    except ValueError as error:
+        return jsonify({"ok": False, "reason": str(error)})
+    return jsonify({"ok": True})
+
+
+@bp.route("/api/pomodoro/biotop/test/clear", methods=["POST"])
+def api_biotop_test_clear():
+    if not _test_tools():
+        return jsonify({"ok": False, "reason": "Nur im Testprofil."}), 404
+    return jsonify({"ok": True, "removed": biotop.clear_test_plants()})
+
+
 # ---------------------------------------------------------------- Feed
 
 
@@ -824,7 +853,10 @@ def api_profile_delete(profile_id):
                         "geloescht werden -- erst wechseln."}), 400
     if not profiles.get(profile_id):
         return jsonify({"ok": False, "reason": "Unbekanntes Profil."}), 404
-    if len(profiles.all_profiles()) <= 1:
+    if profiles.is_test(profile_id):
+        return jsonify({"ok": False, "reason": "Das Testprofil kann nicht "
+                        "geloescht werden."}), 400
+    if len([p for p in profiles.all_profiles() if not p.get("test")]) <= 1:
         return jsonify({"ok": False, "reason": "Das letzte Profil kann nicht "
                         "geloescht werden."}), 400
     if not hosted() and profile_id == profiles.feed_profile_id():

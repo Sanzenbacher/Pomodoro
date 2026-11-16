@@ -35,6 +35,38 @@
   </div>
   <div class="note" style="margin-top: 8px;">Zoomen mit Strg + Mausrad oder den Knöpfen, verschieben durch Ziehen. Ein Klick auf eine Pflanze zeigt, woher sie kommt und wie weit sie ist, ein Klick auf ein Tier, wie alt es ist und welche Pflanzen es gebracht haben.</div>
 
+  {% if bio_test %}
+  <div class="card bio-test" id="bio-test" style="margin-top: 16px;">
+    <h3>TESTPROFIL · NUR AUF LOCALHOST</h3>
+    <div class="note">Testpflanzen haben keinen Eintrag dahinter und landen im laufenden Monat. Das Thema des Monats springt auf das gewählte.</div>
+    <label class="switch" style="margin-top: 10px;"><input type="checkbox" id="bio-test-spread" checked> ÜBER DEN MONAT VERTEILEN (SONST ALLE JETZT)</label>
+    {% for theme, label in (('garten', 'GARTEN'), ('wald', 'WALD')) %}
+    <div class="bio-test-row" data-theme="{{ theme }}">
+      <div class="label">{{ label }}</div>
+      <input class="field" type="number" min="1" max="{{ bio_test.max }}" value="10" data-role="count-random" aria-label="Anzahl zufällig">
+      <button class="btn small" data-act="random">ZUFÄLLIG PFLANZEN</button>
+      <select class="field" data-role="plant" aria-label="Pflanze">
+        {% for plant in bio_test.plants[theme] %}<option value="{{ plant }}">{{ plant }}</option>{% endfor %}
+      </select>
+      <input class="field" type="number" min="1" max="{{ bio_test.max }}" value="5" data-role="count-plant" aria-label="Anzahl dieser Pflanze">
+      <button class="btn small" data-act="plant">DIESE PFLANZEN</button>
+    </div>
+    {% endfor %}
+    <div class="bio-test-row">
+      <div class="label">JAHRESZEIT</div>
+      <div class="seg" id="bio-test-season"><button data-s="">AUTO</button><button data-s="spring">FRÜHLING</button><button data-s="summer">SOMMER</button><button data-s="autumn">HERBST</button><button data-s="winter">WINTER</button></div>
+      <div class="note">Nur die Ansicht, gilt bis zum Schließen des Tabs.</div>
+    </div>
+    <div style="margin-top: 12px;"><button class="btn small danger" id="bio-test-clear">ALLE TESTPFLANZEN ENTFERNEN</button></div>
+  </div>
+  <style>
+    .bio-test-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+    .bio-test-row .label { width: 70px; }
+    .bio-test-row input.field { width: 90px; }
+    .bio-test-row select.field { width: auto; }
+  </style>
+  {% endif %}
+
   <div class="grid k4" style="margin-top: 18px;">
     <div class="card"><h3>PFLANZEN</h3><div class="cg big" id="bio-k-plants">0</div><div class="note" id="bio-k-plants-n"></div></div>
     <div class="card"><h3>TIERE</h3><div class="cg big" id="bio-k-animals">0</div><div class="note" id="bio-k-animals-n"></div></div>
@@ -69,4 +101,5 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/pomodoro_biotop_page.js') }}"></script>
+{% if bio_test %}<script src="{{ url_for('static', filename='js/pomodoro_biotop_test.js') }}"></script>{% endif %}
 {% endblock %}
