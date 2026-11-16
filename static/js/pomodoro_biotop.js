@@ -451,28 +451,30 @@ function per(h, p) {
   const n = Math.min(6, Math.floor(h / p));
   return { n, p: n >= 6 ? 1 : (h % p) / p, txt: n >= 6 ? 'Maximum erreicht' : `noch ${p - h % p} bis zum nächsten` };
 }
-/* uses: ob eine Pflanze fuer die Regel des Tiers zaehlt (Info zur Pflanze). */
+/* uses: ob eine Pflanze fuer die Regel des Tiers zaehlt (Info zur Pflanze).
+ * every: so viele davon bringen ein Tier, kinds: aus mind. so vielen Sorten
+ * (World.originOf). Frosch und Fuchs haben eigene Regeln. */
 const ANIMALS = {
 garten: [
-  { uses: p => p.cat === 'bluete', id: 'biene', name: 'Biene', rule: 'je 8 Blüten', fly: 24, sleeps: true, calc: k => per(k.cat.bluete, 8) },
-  { uses: p => p.cat === 'bluete', id: 'schmetterling', name: 'Schmetterling', rule: 'je 6 Blüten aus mind. 2 Sorten', fly: 22, sleeps: true,
+  { uses: p => p.cat === 'bluete', id: 'biene', name: 'Biene', every: 8, rule: 'je 8 Blüten', fly: 24, sleeps: true, calc: k => per(k.cat.bluete, 8) },
+  { uses: p => p.cat === 'bluete', id: 'schmetterling', name: 'Schmetterling', every: 6, kinds: 2, rule: 'je 6 Blüten aus mind. 2 Sorten', fly: 22, sleeps: true,
     calc: k => k.kinds.bluete >= 2 ? per(k.cat.bluete, 6) : { n: 0, p: k.kinds.bluete / 2, txt: 'braucht eine zweite Blütensorte' } },
-  { uses: p => p.cat === 'strauch', id: 'igel', name: 'Igel', rule: 'je 5 Sträucher oder Kürbisse', sleeps: true, calc: k => per(k.cat.strauch, 5) },
-  { uses: p => p.cat === 'blatt', id: 'hase', name: 'Hase', rule: 'je 6 Blattpflanzen (Farn, Kohl)', calc: k => per(k.cat.blatt, 6) },
-  { uses: p => p.cat === 'pilz' || p.id === 'kohl', id: 'schnecke', name: 'Schnecke', rule: 'je 3 Pilze oder Kohlköpfe', sleeps: true, calc: k => per(k.cat.pilz + (k.by.kohl || 0), 3) },
-  { uses: () => true, id: 'rotkehlchen', name: 'Rotkehlchen', rule: 'je 15 Pflanzen insgesamt', calc: k => per(k.total, 15) },
+  { uses: p => p.cat === 'strauch', id: 'igel', name: 'Igel', every: 5, rule: 'je 5 Sträucher oder Kürbisse', sleeps: true, calc: k => per(k.cat.strauch, 5) },
+  { uses: p => p.cat === 'blatt', id: 'hase', name: 'Hase', every: 6, rule: 'je 6 Blattpflanzen (Farn, Kohl)', calc: k => per(k.cat.blatt, 6) },
+  { uses: p => p.cat === 'pilz' || p.id === 'kohl', id: 'schnecke', name: 'Schnecke', every: 3, rule: 'je 3 Pilze oder Kohlköpfe', sleeps: true, calc: k => per(k.cat.pilz + (k.by.kohl || 0), 3) },
+  { uses: () => true, id: 'rotkehlchen', name: 'Rotkehlchen', every: 15, rule: 'je 15 Pflanzen insgesamt', calc: k => per(k.total, 15) },
   { uses: () => true, id: 'frosch', name: 'Frosch', rule: '3 Sorten mit je 5+, dann je weitere Sorte', sleeps: true, calc: k => {
     const v = Object.values(k.by), k5 = v.filter(x => x >= 5).length, n = Math.min(6, Math.max(0, k5 - 2));
     const close = Math.max(0, ...v.filter(x => x < 5).map(x => x / 5));
     return { n, p: k5 < 3 ? k5 / 3 : close, txt: k5 < 3 ? `${3 - k5} Sorten fehlen noch bis 5` : 'nächste Sorte mit 5+ bringt einen' };
   }}],
 wald: [
-  { uses: p => p.cat === 'laub', id: 'eichhoernchen', name: 'Eichhörnchen', rule: 'je 6 Laubbäume', calc: k => per(k.cat.laub, 6) },
-  { uses: p => !!p.tree, id: 'specht', name: 'Specht', rule: 'je 10 Bäume', fly: 26, calc: k => per(k.cat.laub + k.cat.nadel, 10) },
-  { uses: p => p.cat === 'nadel', id: 'eule', name: 'Eule', rule: 'je 6 Nadelbäume', fly: 44, calc: k => per(k.cat.nadel, 6) },
-  { uses: p => p.cat === 'unterholz', id: 'reh', name: 'Reh', rule: 'je 6 Pflanzen im Unterholz', calc: k => per(k.cat.unterholz, 6) },
-  { uses: p => p.cat === 'pilz', id: 'wildschwein', name: 'Wildschwein', rule: 'je 3 Pilzgruppen', calc: k => per(k.cat.pilz, 3) },
-  { uses: p => !!p.flower, id: 'schmetterling', name: 'Schmetterling', rule: 'je 4 Waldblumen', fly: 20, sleeps: true, calc: k => per(k.flowers, 4) },
+  { uses: p => p.cat === 'laub', id: 'eichhoernchen', name: 'Eichhörnchen', every: 6, rule: 'je 6 Laubbäume', calc: k => per(k.cat.laub, 6) },
+  { uses: p => !!p.tree, id: 'specht', name: 'Specht', every: 10, rule: 'je 10 Bäume', fly: 26, calc: k => per(k.cat.laub + k.cat.nadel, 10) },
+  { uses: p => p.cat === 'nadel', id: 'eule', name: 'Eule', every: 6, rule: 'je 6 Nadelbäume', fly: 44, calc: k => per(k.cat.nadel, 6) },
+  { uses: p => p.cat === 'unterholz', id: 'reh', name: 'Reh', every: 6, rule: 'je 6 Pflanzen im Unterholz', calc: k => per(k.cat.unterholz, 6) },
+  { uses: p => p.cat === 'pilz', id: 'wildschwein', name: 'Wildschwein', every: 3, rule: 'je 3 Pilzgruppen', calc: k => per(k.cat.pilz, 3) },
+  { uses: p => !!p.flower, id: 'schmetterling', name: 'Schmetterling', every: 4, rule: 'je 4 Waldblumen', fly: 20, sleeps: true, calc: k => per(k.flowers, 4) },
   { id: 'fuchs', name: 'Fuchs', rule: 'je 3 andere Tierarten im Wald', calc: null }]
 };
 const SPD = { biene: 140, schmetterling: 55, igel: 22, hase: 50, schnecke: 6, rotkehlchen: 45, frosch: 70,
@@ -818,8 +820,17 @@ class World {
     return { age, g, full: g >= 1, fullAge: tree ? 9 : 3 };
   }
 
-  /* Pflanze unter einem Punkt des Canvas (CSS-Pixel), die vorderste gewinnt. */
+  /* Tier oder Pflanze unter einem Punkt des Canvas (CSS-Pixel). Tiere
+   * zuerst (draw merkt sich, wo sie zuletzt standen), sonst die vorderste
+   * Pflanze. Tiere erkennt man an sp. */
   hit(mx, my) {
+    let ani = null, dBest = Infinity;
+    this.A.forEach(a => {
+      if (a._hx == null) return;
+      const d = Math.hypot(mx - a._hx, my - a._hy);
+      if (d < a._hr && d < dBest) { ani = a; dBest = d; }
+    });
+    if (ani) return ani;
     const W = this.cv.clientWidth, H = this.cv.clientHeight, z = this.z(W, H), s = z * 1.5;
     let best = null;
     this.visible().forEach(en => {
@@ -836,6 +847,64 @@ class World {
   animalsFor(en) {
     const p = PLANTS[en.plant], info = this.animalInfo();
     return ANIMALS[this.theme].map((a, i) => a.uses && a.uses(p) ? info[i] : null).filter(Boolean);
+  }
+  /* Woher das j-te Tier (ab 0) einer Art kommt. Die Regeln zaehlen Pflanzen
+   * in der Reihenfolge, in der sie gepflanzt wurden: plants sind genau die,
+   * die fuer dieses Tier gezaehlt haben, d der Tag, an dem es kam. Beim Fuchs
+   * zaehlen Tierarten (species, mit dem Tag ihres ersten Tiers). null, wenn
+   * es das Tier am gezeigten Tag nicht gibt. */
+  originOf(id, j) {
+    const list = ANIMALS[this.theme], def = list.find(z => z.id === id);
+    if (!def) return null;
+    // visible() ist nach Zeit sortiert, neu Dazugekommenes haengt hinten an
+    const vis = this.visible().slice().sort((a, b) => a.d - b.d);
+    if (id === 'frosch') {
+      // Reihenfolge, in der Sorten ihre fuenfte Pflanze bekamen
+      const seen = {}, reached = [];
+      vis.forEach(e => {
+        const l = seen[e.plant] = seen[e.plant] || [];
+        if (l.length < 5) { l.push(e); if (l.length === 5) reached.push({ plant: e.plant, d: e.d, plants: l }); }
+      });
+      const r = reached[j + 2];
+      if (!r) return null;
+      return { plants: j ? r.plants : reached.slice(0, 3).flatMap(x => x.plants), d: r.d,
+               kinds: (j ? [r] : reached.slice(0, 3)).map(x => x.plant) };
+    }
+    if (!def.uses) {
+      const firsts = list.filter(z => z.uses).map(z => ({ id: z.id, name: z.name, o: this.originOf(z.id, 0) }))
+        .filter(x => x.o).sort((a, b) => a.o.d - b.o.d);
+      const grp = firsts.slice(j * 3, j * 3 + 3);
+      if (grp.length < 3) return null;
+      return { plants: [], d: grp[2].o.d, species: grp.map(x => ({ id: x.id, name: x.name, d: x.o.d })) };
+    }
+    const q = vis.filter(e => def.uses(PLANTS[e.plant]));
+    const plants = q.slice(j * def.every, (j + 1) * def.every);
+    if (plants.length < def.every) return null;
+    let d = plants[plants.length - 1].d;
+    if (def.kinds) {
+      const k = new Set(), e2 = q.find(e => { k.add(e.plant); return k.size >= def.kinds; });
+      if (!e2) return null;
+      d = Math.max(d, e2.d);
+    }
+    return { plants, d, from: j * def.every + 1, to: (j + 1) * def.every };
+  }
+  /* Herkunft eines Tiers aus this.A, mit seiner Nummer innerhalb der Art. */
+  animalOrigin(a) {
+    const same = this.A.filter(x => x.sp === a.sp), j = same.indexOf(a);
+    if (j < 0) return null;
+    const o = this.originOf(a.sp, j);
+    return o && Object.assign({ j, of: same.length }, o);
+  }
+  /* Pflanzen, die das ausgewaehlte Tier gebracht haben (zum Hervorheben). */
+  relatedPlants() {
+    const s = this.selected;
+    if (!s || !s.sp) return null;
+    const key = this.day + '|' + this.entries.length + '|' + this.A.length + '|' + this.theme;
+    if (!this._rel || this._rel.sel !== s || this._rel.key !== key) {
+      const o = this.animalOrigin(s);
+      this._rel = { sel: s, key, set: new Set(o ? o.plants : []) };
+    }
+    return this._rel.set;
   }
   select(en) { this.selected = en || null; this.dirty = true; if (this.onPick) this.onPick(this.selected); }
 
@@ -1103,16 +1172,17 @@ class World {
     c.restore();
     if (!forest) this.drawGardenThings(c, P, z, s, e, SP);
 
-    const tNow = now();
+    const tNow = now(), rel = this.relatedPlants();
     this.visible().forEach(en => {
       const pl = PLANTS[en.plant];
       let g = this.growth(en).g;
       if (en.born) g *= Math.min(1, .2 + (tNow - en.born) * 1.6);
-      const lift = this.elev(en.x, en.y) * z, mark = en === this.selected ? 1 : en === this.hovered ? .55 : 0;
+      const lift = this.elev(en.x, en.y) * z, mark = en === this.selected ? 1 : rel && rel.has(en) ? .9 : en === this.hovered ? .55 : 0;
+      const ring = rel && rel.has(en) ? '255,214,110' : '255,255,255';
       SP.push({ y: en.y, f: () => {
         const [px, py] = P(en.x, en.y); if (off(px, py - lift, 70)) return;
         // Ausgewaehlt oder unter der Maus: heller Ring am Fuss der Pflanze
-        if (mark) { const r = (pl.tree ? 20 : 10) * s * g + 4; c.strokeStyle = 'rgba(255,255,255,' + (.9 * mark) + ')'; c.lineWidth = 2; c.beginPath(); c.ellipse(px, py - lift, r, r * .45, 0, 0, TAU); c.stroke(); }
+        if (mark) { const r = (pl.tree ? 20 : 10) * s * g + 4; c.strokeStyle = 'rgba(' + ring + ',' + (.9 * mark) + ')'; c.lineWidth = 2; c.beginPath(); c.ellipse(px, py - lift, r, r * .45, 0, 0, TAU); c.stroke(); }
         pl.draw(c, px, py - lift, s * g, t, en.sd, e);
       } });
     });
@@ -1121,6 +1191,8 @@ class World {
     this.A.forEach(a => {
       const [px, py] = P(a.x, a.y), lift = this.elev(a.x, a.y) * z;
       if (a.fly) { if (a.mv || a.sp === 'biene' || a.sp === 'schmetterling') { c.fillStyle = 'rgba(30,40,15,.16)'; el(c, px, py - lift, 3 * as, 1.2 * as, 0); } return; }
+      // Wo es steht, fuer hit() und den Auswahlring
+      a._hx = px; a._hy = py - lift - 7 * as; a._hr = (a.sp === 'reh' || a.sp === 'wildschwein' || a.sp === 'fuchs' ? 15 : 10) * as + 5;
       SP.push({ y: a.y, f: () => AD[a.sp](c, px, py - lift, as * Math.min(1, (t - a.born) * 3), a, t, e) });
     });
     SP.sort((a, b) => a.y - b.y).forEach(o => o.f());
@@ -1128,7 +1200,14 @@ class World {
       if (!a.fly) return;
       const [px, py] = P(a.x, a.y), lift = this.elev(a.x, a.y) * z, bob = a.sp === 'biene' || a.sp === 'schmetterling';
       const alt = bob ? a.fly + Math.sin(t * 3 + a.ph) * 4 : a.mv ? a.fly + 10 : a.fly;
+      a._hx = px; a._hy = py - lift - alt * as; a._hr = 9 * as + 5;
       AD[a.sp](c, px, py - lift - alt * as, as * Math.min(1, (t - a.born) * 3), a, t, e);
+    });
+    // Ausgewaehltes Tier oder Tier unter der Maus: Ring drumherum
+    [[this.selected, 1], [this.hovered, .55]].forEach(([a, k]) => {
+      if (!a || !a.sp || a._hx == null || (k < 1 && a === this.selected)) return;
+      c.strokeStyle = 'rgba(255,255,255,' + (.9 * k) + ')'; c.lineWidth = 2;
+      c.beginPath(); c.arc(a._hx, a._hy, a._hr, 0, TAU); c.stroke();
     });
     if (this.animate) this.drawParts(c, SEASON[this.season].part, z);
     if (this.labels) this.A.forEach(a => {

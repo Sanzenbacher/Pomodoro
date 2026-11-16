@@ -576,6 +576,10 @@ input[type=range]::-webkit-slider-thumb {
 .bio-info .stars { color: var(--pomo-a2); letter-spacing: .08em; }
 .bio-info .note-q { font-style: italic; margin: 4px 0; overflow-wrap: anywhere; }
 .bio-info .textbtn { font-size: 10px; letter-spacing: .2em; }
+.bio-info .bio-plist { margin-top: 6px; display: grid; gap: 2px; }
+.bio-info .bio-plink { display: block; width: 100%; text-align: left; background: none; border: none; border-left: 2px solid rgba(255,214,110,.7); color: var(--pomo-ink); font: inherit; font-size: 12px; padding: 2px 0 2px 8px; cursor: pointer; }
+.bio-info .bio-plink:hover { background: rgba(255,255,255,.06); }
+.bio-info .bio-plink .sub { font-size: 11px; color: var(--pomo-muted); }
 .bio-info .pct { font-family: var(--pomo-display), Georgia, serif; font-size: 20px; }
 .bio-tools { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 18px; border-top: 1px solid var(--pomo-line); background: var(--pomo-surface); }
 .bio-tools input[type=range] { flex: 1; min-width: 160px; }

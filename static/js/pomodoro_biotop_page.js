@@ -98,11 +98,66 @@
             '<div class="sub">' + esc(a.rule) + ' · ' + esc(a.txt) + '</div></div>').join('') + '</dd>';
     }
 
+    // ------------------------------------------------------------ Info zum Tier
+    // Jedes Tier kam, als eine Regel ihre Schwelle erreichte: Die Pflanzen,
+    // die genau dafuer gezaehlt haben, stehen in der Karte und leuchten im
+    // Bild. Ein Klick auf eine davon zeigt die Pflanze.
+
+    const sinceText = d => world.day - d ? 'seit ' + days(world.day - d) : 'heute gekommen';
+    function plantList(list) {
+        return list.map(e => '<button class="bio-plink" data-entry="' + world.entries.indexOf(e) + '">' +
+            '<span>' + esc(B.PLANTS[e.plant].name) + '</span> <span class="sub">· ' + esc(dayName(e.d)) + ' · ' + esc(srcName(e)) + '</span></button>').join('');
+    }
+    function originRow(a, o) {
+        if (o.species) {
+            return '<dt>GEBRACHT VON</dt><dd><div class="sub">den Tierarten, die vor ihm da waren</div>' +
+                o.species.map(x => '<div>' + esc(x.name) + ' <span class="sub">· seit ' + esc(dayName(x.d)) + '</span></div>').join('') + '</dd>';
+        }
+        let why;
+        if (a.sp === 'frosch') {
+            const names = o.kinds.map(k => B.PLANTS[k].name).join(', ');
+            why = o.j ? 'die ersten 5 ' + names + ', die ' + (o.j + 3) + '. Sorte mit 5 Pflanzen'
+                      : 'je die ersten 5 von ' + names + ', die ersten 3 Sorten mit 5 Pflanzen';
+        } else {
+            why = 'Nr. ' + o.from + ' bis ' + o.to + ' der Pflanzen, die für ' + a.name + ' zählen';
+        }
+        return '<dt>GEBRACHT VON</dt><dd><div class="sub">' + esc(why) + ' (' + o.plants.length + ')</div>' +
+            '<div class="bio-plist">' + plantList(o.plants) + '</div></dd>';
+    }
+    function showAnimal(a) {
+        const o = world.animalOrigin(a);
+        if (!o) { info.hidden = true; world.selected = null; world.dirty = true; return; }
+        const def = B.ANIMALS[world.theme].find(z => z.id === a.sp);
+        info.innerHTML =
+            '<button class="x" id="bio-info-x" title="Schließen">×</button>' +
+            '<div class="head"><canvas class="bio-icon" id="bio-info-icon"></canvas><div>' +
+            '<div class="cg nm">' + esc(a.name) + '</div><div class="ps">Tier ' + (o.j + 1) + ' von ' + o.of + ' dieser Art</div></div></div>' +
+            '<dl>' +
+            '<dt>ALTER</dt><dd>' + (world.day - o.d ? days(world.day - o.d) : 'heute gekommen') +
+            '<div class="sub">kam am ' + esc(dayName(o.d)) + '</div></dd>' +
+            '<dt>REGEL</dt><dd>' + esc(def.rule) + '</dd>' +
+            originRow(a, o) +
+            '</dl>';
+        info.hidden = false;
+        B.drawAnimalIcon($('bio-info-icon'), a.sp);
+        $('bio-info-x').onclick = () => world.select(null);
+    }
+
     const tip = $('bio-tip'), info = $('bio-info');
+    info.addEventListener('click', ev => {
+        const b = ev.target.closest('[data-entry]');
+        const en = b && world.entries[+b.dataset.entry];
+        if (en) { world.select(en); }
+    });
     world.onHover = (e, at) => {
         if (!e || e === world.selected) { tip.hidden = true; return; }
-        const p = B.PLANTS[e.plant], gr = world.growth(e);
-        tip.innerHTML = '<div>' + esc(p.name) + ' · ' + pct(gr.g) + '</div><div class="sub">' + esc(srcName(e)) + '</div>';
+        if (e.sp) {
+            const o = world.animalOrigin(e);
+            tip.innerHTML = '<div>' + esc(e.name) + '</div><div class="sub">' + (o ? esc(sinceText(o.d)) + ' · Klick für Herkunft' : '') + '</div>';
+        } else {
+            const p = B.PLANTS[e.plant], gr = world.growth(e);
+            tip.innerHTML = '<div>' + esc(p.name) + ' · ' + pct(gr.g) + '</div><div class="sub">' + esc(srcName(e)) + '</div>';
+        }
         tip.hidden = false;
         const W = world.cv.clientWidth, w = tip.offsetWidth, h = tip.offsetHeight;
         tip.style.left = Math.max(6, Math.min(W - w - 6, at[0] + 14)) + 'px';
@@ -112,6 +167,7 @@
 
     function showInfo() {
         const e = world.selected;
+        if (e && e.sp) { showAnimal(e); return; }
         if (!e || e.d > world.day) { info.hidden = true; if (e) { world.selected = null; world.dirty = true; } return; }
         const p = B.PLANTS[e.plant], gr = world.growth(e);
         info.innerHTML =
