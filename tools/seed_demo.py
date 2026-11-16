@@ -161,11 +161,26 @@ if __name__ == "__main__":
     parser.add_argument("--clear", action="store_true", help="Beispieldaten entfernen")
     parser.add_argument("--profile", help="id oder Name (ohne: das erste Profil, "
                                           "KONZEPT-PROFILE.md, 7)")
+    parser.add_argument("--account", help="gehostet: E-Mail oder id des Kontos "
+                                          "(KONZEPT-ACCOUNTS.md)")
     args = parser.parse_args()
-    profile = profiles.find(args.profile) if args.profile else profiles.get(profiles.default_id())
+    from data.appconfig import hosted
+    account_id = None
+    if hosted():
+        from data import accounts
+        if not args.account:
+            sys.exit("Gehosteter Betrieb: bitte --account <E-Mail> angeben.")
+        accounts.init()
+        found = accounts.find_by_email(args.account)
+        account_id = found["id"] if found else args.account
+        if account_id not in accounts.active_accounts():
+            sys.exit("Unbekanntes Konto: %s" % args.account)
+    with profiles.as_account(account_id or profiles.current_account()):
+        profile = (profiles.find(args.profile) if args.profile
+                   else profiles.get(profiles.default_id()))
     if not profile:
         sys.exit("Unbekanntes Profil: %s" % args.profile)
-    with profiles.as_profile(profile["id"]):
+    with profiles.as_profile(profile["id"], account_id):
         if args.clear:
             clear()
         else:

@@ -9,12 +9,11 @@ Siehe KONZEPT.md, Abschnitt 2 und 4.
 
 import json
 import os
-import sqlite3
 import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from data import profiles
+from data import db, profiles
 from data.appconfig import POMO
 
 KINDS = ("work", "short_break", "long_break")
@@ -30,7 +29,7 @@ OVERTIME_THRESHOLD = 60
 #: Kategorien fuers Journal beim ersten Start (use_timer = 0, use_journal = 1).
 DEFAULT_ACTIVITIES = ("Sport", "Spazieren", "Gitarre")
 
-#: Je Profil ein Watchdog: {profile_id: threading.Timer}. Lenas Timer laeuft
+#: Je Profil ein Watchdog: {(konto, profil): threading.Timer}. Lenas Timer laeuft
 #: weiter, waehrend Martin schreibt (KONZEPT-PROFILE.md, 5).
 _timers = {}
 _timer_lock = threading.Lock()
@@ -54,14 +53,26 @@ def parse(value):
     return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
+def local(moment):
+    """Zeitmarke in der Zeitzone des Kontos (gehostet) oder des Rechners."""
+    return moment.astimezone(profiles.timezone_info())
+
+
+def local_midnight(day):
+    """Mitternacht eines Kalendertags (date) als Zeitmarke mit Zone."""
+    zone = profiles.timezone_info()
+    start = datetime.combine(day, datetime.min.time())
+    return start.replace(tzinfo=zone) if zone else start.astimezone()
+
+
 def day_of(moment):
     """Kalendertag einer Zeitmarke, um day_start_hour verschoben.
 
     Ohne diesen Versatz zerreisst jede Nachtsession die Tagesstatistik und
     den Streak um Mitternacht.
     """
-    local = moment.astimezone()
-    return (local - timedelta(hours=int(setting("day_start_hour")))).date().isoformat()
+    local_moment = local(moment)
+    return (local_moment - timedelta(hours=int(setting("day_start_hour")))).date().isoformat()
 
 
 def today():
@@ -93,14 +104,14 @@ SETTING_SPEC = {
     "biotop_cards": {"default": 100, "min": 0, "max": 100},
 }
 
-#: Je Profil: {profile_id: {key: value}}.
+#: Je Profil: {(konto, profil): {key: value}}.
 _settings_cache = {}
 
 
 def settings():
     """Gelesen wird oft (day_of steckt in jeder Auswertung), geschrieben
     selten -- deshalb einmal lesen und im Prozess halten."""
-    profile_id = profiles.current()
+    profile_id = profiles.current_key()
     cached = _settings_cache.get(profile_id)
     if cached is not None:
         return cached
@@ -117,7 +128,7 @@ def settings():
                         pass
         finally:
             conn.close()
-    except sqlite3.Error:
+    except db.ERRORS:
         # Noch kein init_db gelaufen: Vorgaben genuegen.
         return values
 
@@ -150,7 +161,7 @@ def save_settings(values):
         conn.commit()
     finally:
         conn.close()
-    _settings_cache.pop(profiles.current(), None)
+    _settings_cache.pop(profiles.current_key(), None)
     return written
 
 
@@ -170,9 +181,9 @@ def db_path():
 def get_db():
     """Verbindung zur Datenbank des aktuellen Profils. Beim ersten Zugriff
     je Profil laeuft init_db() -- Schema, Migrationen, Recovery."""
-    if profiles.current() not in _initialised:
+    if profiles.current_key() not in _initialised:
         with _init_lock:
-            if profiles.current() not in _initialised:
+            if profiles.current_key() not in _initialised:
                 init_db()
     return _connect()
 
@@ -180,8 +191,7 @@ def get_db():
 def _connect():
     path = db_path()
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    conn = sqlite3.connect(path, timeout=10)
-    conn.row_factory = sqlite3.Row
+    conn = db.connect(path, profiles.db_key())
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
@@ -283,7 +293,7 @@ CREATE INDEX IF NOT EXISTS idx_events_session   ON pomo_events(session_id);
 def init_db():
     # Zuerst eintragen: Alles hier drin (Migration, recover) ruft get_db()
     # und soll nicht noch einmal hier landen.
-    profile_id = profiles.current()
+    profile_id = profiles.current_key()
     _initialised.add(profile_id)
     try:
         _init_db()
@@ -444,7 +454,7 @@ def _migrate_categories(conn, fresh=False):
     os.makedirs(backups, exist_ok=True)
     target = os.path.join(backups, "pomodoro-vor-kategorien-%s.db"
                           % datetime.now().strftime("%Y%m%d-%H%M%S"))
-    backup = sqlite3.connect(target)
+    backup = db.connect(target, profiles.db_key())
     try:
         conn.backup(backup)
     finally:
@@ -1221,7 +1231,7 @@ def recover_decide(mode, until=None):
 
 def _disarm():
     with _timer_lock:
-        timer = _timers.pop(profiles.current(), None)
+        timer = _timers.pop(profiles.current_key(), None)
         if timer:
             timer.cancel()
 
@@ -1255,7 +1265,7 @@ def _arm():
         # threading.Timer erbt den Profil-Kontext nicht -- mitgeben.
         timer = threading.Timer(max(0.0, delay), profiles.bound(handler))
         timer.daemon = True
-        _timers[profiles.current()] = timer
+        _timers[profiles.current_key()] = timer
         timer.start()
 
 
@@ -1414,8 +1424,9 @@ def forget_profile(profile_id):
         if state["state"] != "idle":
             abort()
         _disarm()
-    _settings_cache.pop(profile_id, None)
-    _initialised.discard(profile_id)
+    key = (profiles.current_account(), profile_id)
+    _settings_cache.pop(key, None)
+    _initialised.discard(key)
     from data import pomodoro_notify
     with pomodoro_notify._pending_lock:
-        pomodoro_notify._pending.pop(profile_id, None)
+        pomodoro_notify._pending.pop(key, None)

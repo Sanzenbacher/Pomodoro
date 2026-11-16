@@ -190,7 +190,7 @@ def feelings():
 
 
 def _clock(started, minutes=None):
-    start = started.astimezone()
+    start = pomo.local(started)
     if not minutes:
         return start.strftime("%H:%M")
     end = start + timedelta(minutes=minutes)

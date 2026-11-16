@@ -48,7 +48,16 @@ FORMAT = 1
 # ---------------------------------------------------------------- Hilfen
 
 
+def _require_local():
+    from data.appconfig import hosted
+    if hosted():
+        sys.exit("Gehosteter Betrieb: Export ueber GET /api/auth/export (je Konto), "
+                 "Umzug einer lokalen Installation mit "
+                 "python tools/accounts.py create --adopt-existing.")
+
+
 def _require_stopped():
+    _require_local()
     if server_running():
         sys.exit("Der Server laeuft noch (%s:%d) -- bitte erst beenden."
                  % server_address())

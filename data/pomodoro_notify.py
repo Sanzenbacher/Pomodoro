@@ -16,7 +16,7 @@ import sys
 import threading
 
 from data import profiles
-from data.appconfig import POMO, ROOT
+from data.appconfig import POMO, ROOT, hosted
 
 NOTIFY = POMO["notify"]
 
@@ -39,7 +39,8 @@ LABELS = {
 
 
 def play_sound():
-    if not NOTIFY.get("sound"):
+    # Gehostet klingelte der Server, nicht der Rechner der Familie.
+    if hosted() or not NOTIFY.get("sound"):
         return False
     try:
         import winsound
@@ -119,7 +120,7 @@ def _toast(title, body):
 
 
 def show_toast(title, body):
-    if not NOTIFY.get("toast"):
+    if hosted() or not NOTIFY.get("toast"):
         return False
     toaster = _get_toaster()
     if toaster is not None:
@@ -140,7 +141,7 @@ def show_toast(title, body):
 def raise_window():
     """Bei minimiertem Fenster hilft ein DOM-Overlay gar nichts -- erst muss
     das Fenster wieder da sein."""
-    if not NOTIFY.get("raise_window"):
+    if hosted() or not NOTIFY.get("raise_window"):
         return False
     try:
         import webview
@@ -216,11 +217,11 @@ def overtime_capped(payload):
 
 def _push(alert):
     with _pending_lock:
-        _pending.setdefault(profiles.current(), []).append(alert)
+        _pending.setdefault(profiles.current_key(), []).append(alert)
 
 
 def take_pending():
     """Die Seite fragt beim Pollen nach und bekommt jeden Alarm genau einmal
     -- nur die des aktuellen Profils."""
     with _pending_lock:
-        return _pending.pop(profiles.current(), [])
+        return _pending.pop(profiles.current_key(), [])

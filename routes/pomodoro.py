@@ -8,8 +8,7 @@ import uuid
 from datetime import date, timedelta
 from urllib.parse import urlencode
 
-from flask import (Blueprint, Response, g, jsonify, redirect, render_template, request,
-                   send_from_directory)
+from flask import (Blueprint, Response, g, jsonify, redirect, render_template, request)
 
 from data import pomodoro as pomo
 from data import pomodoro_biotop as biotop
@@ -22,7 +21,7 @@ from data import pomodoro_palette as palette_mod
 from data import pomodoro_projects as projects
 from data import pomodoro_stats as stats
 from data import profiles
-from data.appconfig import POMO
+from data.appconfig import ACCOUNTS, POMO, hosted
 
 bp = Blueprint("pomodoro", __name__)
 
@@ -47,7 +46,8 @@ PROFILE_COOKIE_AGE = 365 * 24 * 3600
 
 def _set_profile_cookie(response, profile_id):
     response.set_cookie(PROFILE_COOKIE, profile_id, max_age=PROFILE_COOKIE_AGE,
-                        samesite="Lax")
+                        samesite="Lax",
+                        secure=hosted() and bool(ACCOUNTS.get("cookie_secure", True)))
     response.delete_cookie(OLD_PROFILE_COOKIE)
 
 
@@ -64,9 +64,54 @@ def _wants_chooser():
             and request.cookies.get(BOOT_COOKIE) != BOOT_ID)
 
 
+def _bearer_token():
+    header = request.headers.get("Authorization", "")
+    if header.lower().startswith("bearer "):
+        return header[7:].strip()
+    return request.args.get("token")
+
+
+def _enter_hosted():
+    """Gehostet: erst das Konto (Sitzung oder API-Token), dann das Profil --
+    nur unter den Profilen dieses Kontos (KONZEPT-ACCOUNTS.md, 6)."""
+    from data import accounts
+    from routes import auth
+
+    path = request.path
+    if (request.endpoint == "static" or path.startswith("/static/")
+            or path in auth.PUBLIC_PAGES or path.startswith("/api/auth/")):
+        return None
+    if path in FEED_PATHS:
+        found = accounts.resolve_api_token(_bearer_token())
+        if not found:
+            return jsonify({"ok": False, "reason": "Gültiges API-Token fehlt."}), 401
+        account_id, profile_id = found
+        g.account_id = account_id
+        g.pomo_profile_token = profiles.activate(profile_id, account_id)
+        return None
+
+    account_id = accounts.session_account(auth.session_token())
+    if not account_id:
+        if path.startswith("/api/"):
+            return jsonify({"ok": False, "reason": "Bitte anmelden."}), 401
+        return redirect("/login?" + urlencode({"next": request.full_path.rstrip("?")}))
+    g.account_id = account_id
+    with profiles.as_account(account_id):
+        if _wants_chooser():
+            return redirect("/pomodoro/profiles?" + urlencode(
+                {"next": request.full_path.rstrip("?")}))
+        # Ein Profil-Cookie aus einem fremden Konto wird hier einfach nicht
+        # gefunden -- resolve() faellt auf das eigene zurueck.
+        profile_id = profiles.resolve(request.cookies.get(PROFILE_COOKIE))
+    g.pomo_profile_token = profiles.activate(profile_id, account_id)
+    return None
+
+
 @bp.before_app_request
 def _enter_profile():
     """Jede Anfrage laeuft fuer genau ein Profil (KONZEPT-PROFILE.md, 4)."""
+    if hosted():
+        return _enter_hosted()
     if request.path in FEED_PATHS:
         if "user" in request.args and "profile" not in request.args:
             # Laut statt still die Daten des Feed-Profils: Ein Abnehmer mit
@@ -110,8 +155,11 @@ def _leave_profile(_exc):
 
 @bp.app_context_processor
 def _profile_helpers():
+    if not profiles.has_profile():
+        # Anmeldeseiten: noch kein Konto, kein Profil.
+        return {"current_profile": None, "all_profiles": [], "hosted": hosted()}
     return {"current_profile": profiles.get(profiles.current()),
-            "all_profiles": profiles.all_profiles()}
+            "all_profiles": profiles.all_profiles(), "hosted": hosted()}
 
 
 @bp.app_context_processor
@@ -236,7 +284,7 @@ def stats_page():
         rows = pomo.sessions(limit=120, project_id=project_id)
     for row in rows:
         # In der Datenbank steht UTC; die Tabelle zeigt Ortszeit wie die Diagramme.
-        local = pomo.parse(row["started_at"]).astimezone()
+        local = pomo.local(pomo.parse(row["started_at"]))
         row["local_start"] = local.strftime("%H:%M · %d.%m.%Y")
     breakdown = stats.by_project(range_key)
     for bucket in breakdown:
@@ -390,7 +438,11 @@ def settings_page():
 def media(name):
     """Projektbilder liegen ausserhalb von static/, damit storage/ die
     einzige Stelle mit Nutzerdaten bleibt."""
-    return send_from_directory(projects.image_dir(), name, max_age=0)
+    found = projects.read_image(name)
+    if not found:
+        return Response("Nicht gefunden.", status=404)
+    data, mime = found
+    return Response(data, mimetype=mime, headers={"Cache-Control": "no-store"})
 
 
 # ---------------------------------------------------------------- Timer
@@ -775,10 +827,13 @@ def api_profile_delete(profile_id):
     if len(profiles.all_profiles()) <= 1:
         return jsonify({"ok": False, "reason": "Das letzte Profil kann nicht "
                         "geloescht werden."}), 400
-    if profile_id == profiles.feed_profile_id():
+    if not hosted() and profile_id == profiles.feed_profile_id():
         return jsonify({"ok": False, "reason": "Merge Requests liest die Daten "
                         "dieses Profils -- es kann nicht geloescht werden."}), 400
     pomo.forget_profile(profile_id)
+    if hosted():
+        from data import accounts
+        accounts.revoke_profile_tokens(profiles.current_account(), profile_id)
     try:
         moved = profiles.remove(profile_id)
     except ValueError as error:

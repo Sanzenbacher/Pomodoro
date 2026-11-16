@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pomodoro · Konto</title>
+<!-- Platzhalter: Die eigentliche Oberflaeche fuer Konten folgt im
+     Frontend-Konzept. Diese Seite ruft nur /api/auth/* auf. -->
+<style>
+  :root { color-scheme: light dark; --bg: #f6f1ea; --fg: #2b2622; --muted: #7a6f66;
+          --accent: #c8643b; --card: #fffaf4; --line: #e3d8cc; --bad: #a33a2a; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1d1a17; --fg: #eee6dc; --muted: #a59a8f; --card: #26221e; --line: #3a342e; }
+  }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+         background: var(--bg); color: var(--fg);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 16px; }
+  main { width: 100%; max-width: 380px; background: var(--card); border: 1px solid var(--line);
+         border-radius: 14px; padding: 28px; }
+  h1 { font-size: 1.4rem; margin: 0 0 18px; }
+  label { display: block; font-size: .9rem; color: var(--muted); margin: 12px 0 4px; }
+  input { width: 100%; box-sizing: border-box; padding: 10px 12px; font: inherit;
+          border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
+  button { margin-top: 18px; width: 100%; padding: 11px; font: inherit; font-weight: 600;
+           border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: default; }
+  .msg { margin-top: 14px; font-size: .95rem; }
+  .msg.bad { color: var(--bad); }
+  nav { margin-top: 18px; font-size: .9rem; display: flex; gap: 14px; flex-wrap: wrap; }
+  a { color: var(--accent); }
+  .hint { font-size: .85rem; color: var(--muted); margin-top: 4px; }
+</style>
+</head>
+<body>
+<main data-mode="{{ mode }}">
+  {% if mode == "login" %}
+    <h1>Anmelden</h1>
+    <form data-api="/api/auth/login">
+      <label for="email">E-Mail</label>
+      <input id="email" name="email" type="email" autocomplete="username" required>
+      <label for="password">Passwort</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button>Anmelden</button>
+    </form>
+    <nav><a href="/register">Konto anlegen</a><a href="/forgot">Passwort vergessen</a></nav>
+  {% elif mode == "register" %}
+    <h1>Konto anlegen</h1>
+    <form data-api="/api/auth/register">
+      <label for="email">E-Mail</label>
+      <input id="email" name="email" type="email" autocomplete="username" required>
+      <label for="password">Passwort</label>
+      <input id="password" name="password" type="password" autocomplete="new-password"
+             minlength="{{ min_password }}" maxlength="128" required>
+      <div class="hint">Mindestens {{ min_password }} Zeichen. Am einfachsten: mehrere Wörter.</div>
+      <label for="profile_name">Dein Name (erstes Profil)</label>
+      <input id="profile_name" name="profile_name" maxlength="40" value="Ich">
+      <input type="hidden" name="timezone" data-timezone>
+      <button>Konto anlegen</button>
+    </form>
+    <nav><a href="/login">Schon ein Konto? Anmelden</a></nav>
+  {% elif mode == "forgot" %}
+    <h1>Passwort vergessen</h1>
+    <form data-api="/api/auth/password/forgot">
+      <label for="email">E-Mail</label>
+      <input id="email" name="email" type="email" autocomplete="username" required>
+      <button>Link schicken</button>
+    </form>
+    <nav><a href="/login">Zurück zur Anmeldung</a></nav>
+  {% elif mode == "reset" %}
+    <h1>Neues Passwort</h1>
+    <form data-api="/api/auth/password/reset" data-token>
+      <label for="password">Neues Passwort</label>
+      <input id="password" name="password" type="password" autocomplete="new-password"
+             minlength="{{ min_password }}" maxlength="128" required>
+      <div class="hint">Mindestens {{ min_password }} Zeichen.</div>
+      <button>Speichern</button>
+    </form>
+    <nav><a href="/login">Zur Anmeldung</a></nav>
+  {% elif mode == "verify" %}
+    <h1>Adresse bestätigen</h1>
+    <form data-api="/api/auth/verify" data-token data-auto></form>
+    <nav><a href="/login">Zur Anmeldung</a></nav>
+  {% elif mode == "verify-email-change" %}
+    <h1>Neue Adresse bestätigen</h1>
+    <form data-api="/api/auth/email/confirm" data-token data-auto></form>
+    <nav><a href="/pomodoro">Zur App</a></nav>
+  {% endif %}
+  <div class="msg" role="status" aria-live="polite"></div>
+</main>
+<script>
+(function () {
+  var main = document.querySelector('main');
+  var form = document.querySelector('form');
+  var msg = document.querySelector('.msg');
+  var params = new URLSearchParams(location.search);
+  var mode = main.getAttribute('data-mode');
+  var tz = document.querySelector('[data-timezone]');
+  if (tz) {
+    try { tz.value = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+  }
+  function show(text, bad) {
+    msg.textContent = text || '';
+    msg.className = 'msg' + (bad ? ' bad' : '');
+  }
+  function nextUrl() {
+    var next = params.get('next') || '/pomodoro';
+    return /^\/pomodoro(\/|\?|$)/.test(next) ? next : '/pomodoro';
+  }
+  function send() {
+    var body = {};
+    new FormData(form).forEach(function (value, key) { body[key] = value; });
+    if (form.hasAttribute('data-token')) body.token = params.get('token') || '';
+    var button = form.querySelector('button');
+    if (button) button.disabled = true;
+    show('…');
+    return fetch(form.getAttribute('data-api'), {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (button) button.disabled = false;
+      if (!res.ok) { show(res.reason || 'Das hat nicht geklappt.', true); return; }
+      if (mode === 'login') { location.href = nextUrl(); return; }
+      if (mode === 'verify') { show('Danke, die Adresse ist bestätigt. Du kannst dich jetzt anmelden.'); return; }
+      if (mode === 'verify-email-change') { show('Die neue Adresse gilt ab sofort.'); return; }
+      show(res.message || 'Erledigt.');
+      if (mode === 'register' || mode === 'reset') form.reset();
+    }).catch(function () {
+      if (button) button.disabled = false;
+      show('Keine Verbindung zum Server.', true);
+    });
+  }
+  form.addEventListener('submit', function (event) { event.preventDefault(); send(); });
+  if (form.hasAttribute('data-auto')) send();
+})();
+</script>
+</body>
+</html>

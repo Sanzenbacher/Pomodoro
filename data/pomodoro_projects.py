@@ -57,6 +57,21 @@ def image_files(project_id):
     return found
 
 
+MIME_OF = {"png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}
+
+
+def read_image(name):
+    """(Bytes, MIME) eines Projektbilds -- gehostet entschluesselt. None,
+    wenn es die Datei nicht gibt oder der Name aus dem Ordner fuehrt."""
+    if not name or os.path.basename(name) != name or name.startswith("."):
+        return None
+    ext = name.rsplit(".", 1)[-1].lower()
+    path = os.path.join(image_dir(), name)
+    if ext not in MIME_OF or not os.path.isfile(path):
+        return None
+    return profiles.read_file(path), MIME_OF[ext]
+
+
 def has_image(project_row):
     return bool(project_row.get("image_path"))
 
@@ -78,17 +93,16 @@ def save_image(project_id, blob, mime, seeds, thumb_url=None, veil_url=None):
     _ensure_dir()
     remove_image(project_id, keep_palette=True)
 
+    # Gehostet verschluesselt profiles.write_file (KONZEPT-ACCOUNTS.md, 3.1).
     name = "%s.%s" % (project_id, ext)
-    with open(os.path.join(image_dir(), name), "wb") as handle:
-        handle.write(blob)
+    profiles.write_file(os.path.join(image_dir(), name), blob)
 
     for suffix, data_url in (("_thumb", thumb_url), ("_veil", veil_url)):
         mime2, data = _decode_data_url(data_url) if data_url else (None, None)
         if data:
             ext2 = ALLOWED.get(mime2, "png")
-            with open(os.path.join(image_dir(), "%s%s.%s" % (project_id, suffix, ext2)),
-                      "wb") as handle:
-                handle.write(data)
+            profiles.write_file(os.path.join(image_dir(), "%s%s.%s"
+                                             % (project_id, suffix, ext2)), data)
 
     pomo.update_project(project_id, {
         "image_path": name,

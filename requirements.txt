@@ -6,3 +6,10 @@ PyYAML>=6.0
 #   pywebview       eigenes Fenster statt Browser-Tab
 windows-toasts>=1.1; sys_platform == "win32"
 pywebview>=5.0
+
+# Gehosteter Betrieb mit Konten (server.mode: hosted, KONZEPT-ACCOUNTS.md).
+# Lokal nicht noetig.
+cryptography>=42
+argon2-cffi>=23.1
+sqlcipher3-wheels>=0.5
+waitress>=3.0

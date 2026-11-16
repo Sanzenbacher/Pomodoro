@@ -17,8 +17,27 @@ DEFAULTS = {
         "project_colors": True,
         "project_image_veil": True,
     },
-    "server": {"host": "127.0.0.1", "port": 5333},
+    # mode: local = eine Installation ohne Anmeldung (wie bisher),
+    #       hosted = Konten mit E-Mail und Passwort, alles verschluesselt
+    #       (KONZEPT-ACCOUNTS.md).
+    "server": {"host": "127.0.0.1", "port": 5333, "mode": "local",
+               "storage": None, "behind_proxy": True, "threads": 8},
     "profiles": {"first_name": "Ich"},
+    "accounts": {
+        "max_profiles": 5,
+        # Masterschluessel und Pepper: zuerst $CREDENTIALS_DIRECTORY
+        # (systemd), sonst diese Datei-Ablage -- nie Umgebungsvariablen.
+        "key_dir": "/etc/pomodoro",
+        "base_url": "http://127.0.0.1:5333",
+        "timezone": "Europe/Berlin",
+        "session_idle_days": 7,
+        "session_max_days": 30,
+        "cookie_secure": True,
+        # Pwned-Passwords-Liste (SHA-1, sortiert, "HASH:Anzahl" je Zeile)
+        "breached_list": None,
+    },
+    "mail": {"host": None, "port": 587, "user": None, "starttls": True,
+             "sender": "Pomodoro <pomodoro@localhost>"},
 }
 
 
@@ -46,6 +65,31 @@ def load():
 
 CONFIG = load()
 POMO = CONFIG["pomodoro"]
+
+# Pfade und Betriebsart duerfen aus der Umgebung kommen (Tests, systemd) --
+# Schluessel nie, die liegen als Datei/Credential (KONZEPT-ACCOUNTS.md, 3).
+if os.environ.get("POMODORO_MODE"):
+    CONFIG["server"]["mode"] = os.environ["POMODORO_MODE"]
+if os.environ.get("POMODORO_STORAGE"):
+    CONFIG["server"]["storage"] = os.environ["POMODORO_STORAGE"]
+if os.environ.get("POMODORO_PORT"):
+    CONFIG["server"]["port"] = int(os.environ["POMODORO_PORT"])
+if os.environ.get("POMODORO_KEY_DIR"):
+    CONFIG["accounts"]["key_dir"] = os.environ["POMODORO_KEY_DIR"]
+
+ACCOUNTS = CONFIG["accounts"]
+
+
+def hosted():
+    """Gehosteter Betrieb mit Konten (KONZEPT-ACCOUNTS.md)?"""
+    return CONFIG["server"].get("mode") == "hosted"
+
+
+def storage_root():
+    configured = CONFIG["server"].get("storage")
+    if configured:
+        return os.path.abspath(os.path.join(ROOT, configured))
+    return os.path.join(ROOT, "storage")
 
 
 def server_address():

@@ -32,3 +32,25 @@ profiles:
 server:
   host: 127.0.0.1
   port: 5333
+  # local  = eine Installation ohne Anmeldung (wie bisher)
+  # hosted = Konten mit E-Mail und Passwort, alles verschluesselt
+  #          (KONZEPT-ACCOUNTS.md; Einrichtung siehe README)
+  mode: local
+
+# Nur im gehosteten Betrieb.
+accounts:
+  max_profiles: 5
+  # Masterschluessel und Pepper: zuerst systemd-Credentials, sonst hier
+  # (Dateien master.key / pepper.key, Rechte 0600). Nie in storage/ oder git.
+  key_dir: /etc/pomodoro
+  base_url: https://pomodoro.example.org   # fuer Links in Mails
+  timezone: Europe/Berlin                  # Vorgabe fuer neue Konten
+  cookie_secure: true
+  # breached_list: /var/lib/pomodoro/pwned-passwords-sha1-ordered-by-hash.txt
+
+mail:
+  host:            # leer = Mails nur auf der Konsole (Entwicklung)
+  port: 587
+  user:
+  starttls: true
+  sender: "Pomodoro <pomodoro@example.org>"

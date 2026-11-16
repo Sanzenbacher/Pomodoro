@@ -13,6 +13,12 @@ von den bisherigen Orten (storage/db/, storage/pomodoro/projects/) in den
 Ordner des ersten Profils. Schlaegt das fehl, gibt es keine profiles.json,
 und es gilt weiter genau ein Profil an den alten Orten (LEGACY_ID).
 
+Gehostet (KONZEPT-ACCOUNTS.md) kommt eine Ebene darueber: das Konto. Jedes
+Konto hat seinen Ordner storage/accounts/<konto>/ mit einem verschluesselten
+Profilverzeichnis (profiles.json.enc) und darin die Profile wie oben. Im
+lokalen Betrieb gibt es genau ein unsichtbares Konto (LOCAL_ACCOUNT) mit der
+bisherigen Ablage, unverschluesselt.
+
 Keine Flask-Importe.
 """
 
@@ -25,9 +31,10 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
-from data.appconfig import CONFIG, ROOT
+from data import db
+from data.appconfig import ACCOUNTS, CONFIG, hosted, storage_root
 
-STORAGE = os.path.join(ROOT, "storage")
+STORAGE = storage_root()
 REGISTRY = os.path.join(STORAGE, "profiles.json")
 PROFILES_DIR = os.path.join(STORAGE, "profiles")
 
@@ -47,12 +54,101 @@ def first_name():
     return name or LEGACY_PROFILE["name"]
 
 _current = contextvars.ContextVar("pomo_profile", default=None)
+_account = contextvars.ContextVar("pomo_account", default=None)
+
+#: Das eine Konto des lokalen Betriebs -- Daten an den bisherigen Orten.
+LOCAL_ACCOUNT = "local"
+
+
+def max_profiles():
+    """Hoechstens so viele Profile je Konto (KONZEPT-ACCOUNTS.md, 5)."""
+    return int(ACCOUNTS.get("max_profiles") or 5)
+
+
+# ---------------------------------------------------------------- Konto
+
+
+def current_account():
+    """Konto des laufenden Kontexts. Lokal immer LOCAL_ACCOUNT; gehostet
+    wirft es, wenn keins gesetzt ist -- nie raten."""
+    account_id = _account.get()
+    if account_id:
+        return account_id
+    if not hosted():
+        return LOCAL_ACCOUNT
+    raise RuntimeError("Kein Konto gesetzt -- profiles.as_account() fehlt.")
+
+
+def encrypted(account_id=None):
+    return (account_id or current_account()) != LOCAL_ACCOUNT
+
+
+def account_dir(account_id=None):
+    account_id = account_id or current_account()
+    if account_id == LOCAL_ACCOUNT:
+        return STORAGE
+    return os.path.join(STORAGE, "accounts", account_id)
+
+
+def registry_path(account_id=None):
+    account_id = account_id or current_account()
+    if account_id == LOCAL_ACCOUNT:
+        return REGISTRY
+    return os.path.join(account_dir(account_id), "profiles.json.enc")
+
+
+def _dek(account_id=None):
+    from data import accounts  # zirkulaer: accounts legt Profile an
+    return accounts.dek(account_id or current_account())
+
+
+def db_key(profile_id=None, account_id=None):
+    """SQLCipher-Schluessel der Profil-DB, None im lokalen Betrieb."""
+    account_id = account_id or current_account()
+    if account_id == LOCAL_ACCOUNT:
+        return None
+    from data import crypto
+    return crypto.db_key(_dek(account_id), profile_id or current())
+
+
+def timezone_info():
+    """Zeitzone des Kontos fuer alle "heute"-Rechnungen; None = Ortszeit
+    des Rechners (lokaler Betrieb)."""
+    account_id = current_account()
+    if account_id == LOCAL_ACCOUNT:
+        return None
+    from data import accounts
+    return accounts.zone(account_id)
+
+
+def write_file(path, data, profile_id=None):
+    """Profildatei schreiben -- gehostet verschluesselt (Projektbilder)."""
+    if encrypted():
+        from data import crypto
+        profile_id = profile_id or current()
+        data = crypto.seal_file(_dek(), profile_id, os.path.basename(path), data)
+    tmp = path + ".tmp"
+    with open(tmp, "wb") as handle:
+        handle.write(data)
+    os.replace(tmp, path)
+
+
+def read_file(path, profile_id=None):
+    with open(path, "rb") as handle:
+        data = handle.read()
+    if encrypted():
+        from data import crypto
+        data = crypto.open_file(_dek(), profile_id or current(),
+                                os.path.basename(path), data)
+    return data
 
 
 # ---------------------------------------------------------------- Verzeichnis
 
 
 def _registry():
+    if encrypted():
+        return _account_registry()
     if not os.path.exists(REGISTRY):
         return {"version": 1, "profiles": [dict(LEGACY_PROFILE, name=first_name())],
                 "last_profile": LEGACY_ID, "ask_on_start": False}
@@ -66,14 +162,40 @@ def _registry():
     return data
 
 
+def _account_registry():
+    """Verschluesseltes Profilverzeichnis eines Kontos."""
+    from data import crypto
+    account_id = current_account()
+    with open(registry_path(account_id), "rb") as handle:
+        blob = handle.read()
+    raw = crypto.open_blob(crypto.registry_key(_dek(account_id)), blob,
+                           account_id.encode("ascii"))
+    data = json.loads(raw.decode("utf-8"))
+    data.setdefault("profiles", [])
+    data.setdefault("last_profile", None)
+    data.setdefault("ask_on_start", False)
+    if not data["profiles"]:
+        raise RuntimeError("Konto %s hat kein Profil." % account_id)
+    return data
+
+
 def save_registry(data):
-    """Atomar schreiben: erst daneben, dann ersetzen."""
-    os.makedirs(os.path.dirname(REGISTRY), exist_ok=True)
-    tmp = REGISTRY + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as handle:
-        json.dump(data, handle, ensure_ascii=False, indent=2)
-        handle.write("\n")
-    os.replace(tmp, REGISTRY)
+    """Atomar schreiben: erst daneben, dann ersetzen. Gehostet verschluesselt."""
+    path = registry_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    if encrypted():
+        from data import crypto
+        account_id = current_account()
+        raw = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        with open(tmp, "wb") as handle:
+            handle.write(crypto.seal_blob(crypto.registry_key(_dek(account_id)), raw,
+                                          account_id.encode("ascii")))
+    else:
+        with open(tmp, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+    os.replace(tmp, path)
 
 
 def new_id(taken=()):
@@ -132,7 +254,7 @@ def find(id_or_name):
 def ensure_feed_profile():
     """Beim Start: feed_profile einmal fest eintragen, falls er fehlt (aeltere
     profiles.json). Danach haengt er nicht mehr an Name oder Reihenfolge."""
-    if not os.path.exists(REGISTRY):
+    if hosted() or not os.path.exists(REGISTRY):
         return None
     data = _registry()
     if data.get("feed_profile") in [p["id"] for p in data["profiles"]]:
@@ -161,12 +283,14 @@ def resolve(wanted=None):
     return ids[0]
 
 
-def paths(profile_id=None, storage=STORAGE, folder="profiles"):
-    """Ablageorte eines Profils (Vorgabe: des aktuellen, in dieser Ablage).
+def paths(profile_id=None, storage=None, folder="profiles"):
+    """Ablageorte eines Profils (Vorgabe: des aktuellen, im aktuellen Konto).
 
     storage und folder adressieren eine fremde Ablage, etwa einen kopierten
     storage/-Ordner (tools/port_data.py) oder die alte unter users/."""
     profile_id = profile_id or current()
+    if storage is None:
+        storage = account_dir()
     if profile_id == LEGACY_ID:
         return {"db": os.path.join(storage, "db", "pomodoro.db"),
                 "images": os.path.join(storage, "pomodoro", "projects"),
@@ -208,6 +332,8 @@ def _clean_color(color, data):
 
 
 def _editable():
+    if encrypted():
+        return _registry()
     if not os.path.exists(REGISTRY):
         raise ValueError("Der Umzug in storage/profiles/ ist nicht abgeschlossen -- "
                          "Profile lassen sich erst danach verwalten.")
@@ -218,6 +344,8 @@ def create(name, color=None):
     """Legt das Profil im Verzeichnis an. Datenbank und Ordner entstehen
     beim ersten get_db() (Standardprojekte, leeres Biotop)."""
     data = _editable()
+    if len(data["profiles"]) >= max_profiles():
+        raise ValueError("Ein Konto hat höchstens %d Profile." % max_profiles())
     profile = {"id": new_id({p["id"] for p in data["profiles"]}),
                "name": _clean_name(name, data),
                "color": _clean_color(color, data),
@@ -248,7 +376,7 @@ def remove(profile_id):
         raise KeyError(profile_id)
     if len(data["profiles"]) <= 1:
         raise ValueError("Das letzte Profil kann nicht geloescht werden.")
-    if data.get("feed_profile") == profile_id:
+    if not hosted() and data.get("feed_profile") == profile_id:
         raise ValueError("Merge Requests liest die Daten dieses Profils -- "
                          "es kann nicht geloescht werden.")
     data["profiles"] = [p for p in data["profiles"] if p["id"] != profile_id]
@@ -264,8 +392,9 @@ def discard_folder(profile_id):
     folder = os.path.dirname(paths(profile_id)["db"])
     if not os.path.isdir(folder):
         return None
+    prefix = profile_id if not encrypted() else "%s-%s" % (current_account(), profile_id)
     target = os.path.join(STORAGE, "geloescht", "%s-%s" % (
-        profile_id, datetime.now().strftime("%Y%m%d-%H%M%S")))
+        prefix, datetime.now().strftime("%Y%m%d-%H%M%S")))
     os.makedirs(os.path.dirname(target), exist_ok=True)
     shutil.move(folder, target)
     return target
@@ -306,8 +435,8 @@ _CHECKED_TABLES = ("pomo_sessions", "pomo_journal", "pomo_projects",
                    "pomo_events", "pomo_settings")
 
 
-def counts(path):
-    conn = sqlite3.connect(path)
+def counts(path, key=None):
+    conn = db.connect(path, key)
     try:
         names = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table'")}
@@ -365,15 +494,15 @@ def is_unused(profile_id):
                                           "pomo_events"))
 
 
-def _verify(src, dst):
-    conn = sqlite3.connect(dst)
+def _verify(src, dst, src_key=None, dst_key=None):
+    conn = db.connect(dst, dst_key)
     try:
         result = conn.execute("PRAGMA integrity_check").fetchone()[0]
     finally:
         conn.close()
     if result != "ok":
         raise RuntimeError("integrity_check: %s" % result)
-    before, after = counts(src), counts(dst)
+    before, after = counts(src, src_key), counts(dst, dst_key)
     if before != after:
         raise RuntimeError("Zeilenzahlen weichen ab: %s != %s" % (before, after))
 
@@ -387,6 +516,9 @@ def migrate(log=print):
     Profil angelegt und der bisherige Datenbestand in seinen Ordner
     kopiert, geprueft und erst dann an den alten Orten beiseitegelegt.
     """
+    if hosted():
+        # Gehostet zieht tools/accounts.py create --adopt-existing um.
+        return None
     if os.path.exists(REGISTRY):
         return None
     if os.path.exists(OLD_REGISTRY):
@@ -517,31 +649,60 @@ def current():
     return profile_id
 
 
-def activate(profile_id):
-    """Setzt das Profil fuer den laufenden Kontext; gibt das Token fuer
-    deactivate() zurueck."""
-    return _current.set(profile_id)
+def has_profile():
+    return bool(_current.get())
+
+
+def current_key():
+    """(Konto, Profil): Profil-ids sind nur innerhalb eines Kontos eindeutig.
+    Alles, was der Prozess je Profil merkt, haengt an diesem Schluessel."""
+    return (current_account(), current())
+
+
+def activate(profile_id, account_id=None):
+    """Setzt Profil (und gegebenenfalls Konto) fuer den laufenden Kontext;
+    gibt das Token fuer deactivate() zurueck."""
+    account_token = _account.set(account_id) if account_id else None
+    return (_current.set(profile_id), account_token)
+
+
+def activate_account(account_id):
+    return (None, _account.set(account_id))
 
 
 def deactivate(token):
-    _current.reset(token)
+    profile_token, account_token = token
+    if profile_token is not None:
+        _current.reset(profile_token)
+    if account_token is not None:
+        _account.reset(account_token)
 
 
 @contextmanager
-def as_profile(profile_id):
-    token = _current.set(profile_id)
+def as_account(account_id):
+    token = _account.set(account_id)
+    try:
+        yield account_id
+    finally:
+        _account.reset(token)
+
+
+@contextmanager
+def as_profile(profile_id, account_id=None):
+    token = activate(profile_id, account_id)
     try:
         yield profile_id
     finally:
-        _current.reset(token)
+        deactivate(token)
 
 
 def bound(func, profile_id=None):
-    """func so verpacken, dass sie im Kontext von profile_id laeuft -- fuer
-    threading.Timer, der keine ContextVars erbt."""
+    """func so verpacken, dass sie im Kontext von Konto und Profil laeuft --
+    fuer threading.Timer, der keine ContextVars erbt."""
     profile_id = profile_id or current()
+    account_id = current_account()
 
     def run(*args, **kwargs):
-        with as_profile(profile_id):
+        with as_profile(profile_id, account_id):
             return func(*args, **kwargs)
     return run

@@ -24,3 +24,10 @@ pomodoro-export-*.zip
 
 # Lokale Python-Umgebung, legt start-linux.sh bei Bedarf an
 .venv/
+
+# Gehosteter Betrieb (KONZEPT-ACCOUNTS.md): Login-DB, Konten, Klartext-Reste
+storage/auth.db*
+storage/accounts/
+storage/vor-accounts-*/
+# Schluessel nie ins Repository -- auch nicht versehentlich hier abgelegt
+*.key

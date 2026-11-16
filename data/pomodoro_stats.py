@@ -63,7 +63,7 @@ def _fetch(range_key="30", project_id=None, tag=None):
     for row in rows:
         started = pomo.parse(row["started_at"])
         row["day"] = pomo.day_of(started)
-        row["hour"] = started.astimezone().hour
+        row["hour"] = pomo.local(started).hour
         row["weekday"] = date.fromisoformat(row["day"]).weekday()
         row["minutes"] = round((row["actual_seconds"] or 0) / 60.0, 2)
         # Ueberzeit bleibt in "minutes" enthalten -- eine ueberzogene Sitzung
@@ -369,12 +369,12 @@ def today_timeline():
     """
     day = pomo.today()
     start_hour = int(pomo.setting("day_start_hour"))
-    origin = datetime.combine(date.fromisoformat(day), datetime.min.time()).astimezone()
+    origin = pomo.local_midnight(date.fromisoformat(day))
     origin = origin.replace(hour=start_hour)
-    current = pomo.now().astimezone()
+    current = pomo.local(pomo.now())
 
     def offset(moment):
-        return (moment.astimezone() - origin).total_seconds() / 3600.0
+        return (pomo.local(moment) - origin).total_seconds() / 3600.0
 
     out = []
     for row in sorted(pomo.sessions(limit=300, day=day), key=lambda r: r["started_at"]):
@@ -386,9 +386,9 @@ def today_timeline():
             "label": row["project_label"] or "Ohne Projekt",
             "from": offset(started),
             "to": max(offset(ended), offset(started) + 1 / 60.0),
-            "clock": "%s–%s" % (started.astimezone().strftime("%H:%M"),
+            "clock": "%s–%s" % (pomo.local(started).strftime("%H:%M"),
                                 "läuft" if not row["ended_at"]
-                                else ended.astimezone().strftime("%H:%M")),
+                                else pomo.local(ended).strftime("%H:%M")),
             "minutes": round((row["actual_seconds"] or 0) / 60.0),
             "overtime": round(row["overtime_seconds"] / 60.0),
             "outcome": row["outcome"],

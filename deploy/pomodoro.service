@@ -1,0 +1,35 @@
+# Beispiel-Unit fuer den gehosteten Betrieb (KONZEPT-ACCOUNTS.md).
+#
+# Schluessel einmalig anlegen und verschluesseln (TPM2, wenn vorhanden):
+#   python tools/accounts.py init-keys --dir /root/pomodoro-keys
+#   systemd-creds encrypt --name=pomodoro-master-key /root/pomodoro-keys/master.key \
+#       /etc/credstore.encrypted/pomodoro-master-key
+#   systemd-creds encrypt --name=pomodoro-pepper /root/pomodoro-keys/pepper.key \
+#       /etc/credstore.encrypted/pomodoro-pepper
+#   -> Klartext-Dateien offline sichern, dann vom Server loeschen.
+#
+# Davor ein Reverse Proxy mit HTTPS (z. B. Caddy: reverse_proxy 127.0.0.1:5333).
+
+[Unit]
+Description=Pomodoro (gehostet)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pomodoro
+WorkingDirectory=/opt/pomodoro
+ExecStart=/opt/pomodoro/.venv/bin/python app.py --no-browser
+Environment=POMODORO_MODE=hosted
+Environment=POMODORO_STORAGE=/var/lib/pomodoro/storage
+LoadCredentialEncrypted=pomodoro-master-key
+LoadCredentialEncrypted=pomodoro-pepper
+# LoadCredentialEncrypted=pomodoro-smtp-password
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/pomodoro
+
+[Install]
+WantedBy=multi-user.target

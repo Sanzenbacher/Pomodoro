@@ -159,6 +159,45 @@ Schriftwahl und Kollisionswarnung bei zu ähnlichen Projekten.
 
 ---
 
+## Gehosteter Betrieb mit Konten
+
+Konzept: [`KONZEPT-ACCOUNTS.md`](KONZEPT-ACCOUNTS.md). Eine Familie = ein
+Konto (E-Mail + Passwort), darunter bis zu 5 Profile. Alle Daten liegen
+verschlüsselt auf der Platte; der Masterschlüssel liegt **außerhalb** von
+`storage/`.
+
+```bash
+pip install -r requirements.txt
+python tools/accounts.py init-keys --dir /etc/pomodoro     # Schlüssel, Rechte 0600
+# config.yaml: server.mode: hosted, accounts.base_url, mail.*
+python tools/accounts.py create --email du@example.org --adopt-existing
+                                    # bisherige Profile verschlüsselt übernehmen
+python app.py                       # waitress, hinter einem HTTPS-Proxy
+```
+
+| Aufruf | Wirkung |
+|---|---|
+| `python tools/accounts.py list` | Konten auflisten (ohne Inhalte) |
+| `python tools/accounts.py add-master-key` + `rotate-master` | neuen Masterschlüssel einführen |
+| `python tools/accounts.py rotate-dek --email …` | Datenschlüssel eines Kontos tauschen |
+| `python tools/accounts.py purge` | gelöschte Konten nach 30 Tagen entfernen |
+| `python tools/seed_demo.py --account <E-Mail>` | Beispieldaten in einem Konto |
+| `GET /api/auth/export` | eigene Daten entschlüsselt als ZIP |
+| `python tests/run.py` | alle Tests |
+
+**Masterschlüssel und Pepper getrennt sichern** — ohne sie sind alle Daten
+verloren, und Backups von `storage/` sind ohne sie wertlos. Empfohlen sind
+systemd-Credentials, siehe `deploy/pomodoro.service`.
+
+Pfade und Betriebsart lassen sich auch über die Umgebung setzen
+(`POMODORO_MODE`, `POMODORO_STORAGE`, `POMODORO_KEY_DIR`, `POMODORO_PORT`) —
+Schlüssel selbst nie.
+
+Die Oberfläche für Konten (Login-Seite, Abmelden, Kontoverwaltung) ist noch
+ein schlichter Platzhalter; sie folgt mit dem Frontend-Konzept.
+
+---
+
 ## Aufbau
 
 ```
@@ -177,8 +216,13 @@ data/pomodoro_notify.py         Watchdog-Ebenen: Ton, Toast, Fenster
 data/pomodoro_projects.py       Bilder, Seeds, Palettenauflösung
 data/pomodoro_palette.py        Farbmathematik und Ableitung der neun Rollen
 data/appconfig.py               config.yaml mit Vorgaben
+data/accounts.py                Konten: Login, Sitzungen, Mail-/API-Tokens (gehostet)
+data/crypto.py                  Schlüssel: Masterschlüssel, DEK je Konto, AES-GCM
+data/db.py                      SQLite lokal, SQLCipher gehostet
+data/mailer.py                  Mails per SMTP (Bestätigung, Reset)
 
 routes/pomodoro.py              HTTP-Schicht, dünn
+routes/auth.py                  Konten-API und Anmeldeseiten (gehostet)
 
 templates/base.html             Hülle, Mini-Timer, Overlays, Palette im <style>
 templates/pomodoro.html         Timer
@@ -188,6 +232,7 @@ templates/pomodoro_biotop.html  Biotop
 templates/pomodoro_projects.html Projekte & Aktivitäten, Bilder, Paletten
 templates/pomodoro_settings.html Profil, Tagesziel, Tagesbeginn, Phasenlaengen
 templates/pomodoro_profiles.html Auswahl "Wer bist du?" beim Start
+templates/auth.html             Anmelden, Registrieren, Reset (schlichter Platzhalter)
 
 static/css/pomodoro.css         Variante 08, alles Farbige über CSS-Variablen
 static/js/pomodoro_widget.js    läuft auf jeder Seite: Polling, Mini-Timer, Overlay
@@ -209,6 +254,14 @@ storage/profiles/<id>/backups/     Sicherungen vor Migrationen
 storage/geloescht/              gelöschte Profile, von Hand wiederherstellbar
 tools/seed_demo.py              Beispieldaten
 tools/port_data.py              Profile exportieren / importieren (Rechnerwechsel)
+tools/accounts.py               Schlüssel, Konten, Umzug, Rotation (gehostet)
+tests/run.py                    Tests (lokal und gehostet, je eigener Prozess)
+deploy/pomodoro.service         Beispiel-Unit für systemd (gehostet)
+
+gehostet zusätzlich:
+storage/auth.db                 Login-Daten (SQLCipher, Schlüssel aus dem Masterschlüssel)
+storage/accounts/<konto>/       je Konto: profiles.json.enc + profiles/<id>/ wie oben,
+                                Datenbanken und Bilder verschlüsselt
 ```
 
 Der Klingelton ist nicht heruntergeladen, sondern gerechnet: ein
