@@ -579,6 +579,9 @@ function wavyPath(r, a, b, wig) {
   return catmull(pts, 8);
 }
 
+// Streuung um die Baumgruppen beim Fuellen der Waldplaetze (hoeher = gleichmaessiger)
+const GROVE_JITTER = 450;
+
 function genForest(r) {
   const F = { rivers: [], lakes: [], plateaus: [], clears: [], groves: [], bridges: [], falls: [] };
   F.water = (x, y) => {
@@ -884,7 +887,7 @@ class World {
           out.push([x, y]);
         }
         // Wachstum beginnt bei den Baumgruppen dieses Monats
-        return out.map(p => ({ p, k: Math.min(...F.groves.map(g => Math.hypot(p[0] - g.x, p[1] - g.y) / g.w)) + r() * 170 }))
+        return out.map(p => ({ p, k: Math.min(...F.groves.map(g => Math.hypot(p[0] - g.x, p[1] - g.y) / g.w)) + r() * GROVE_JITTER }))
                   .sort((a, b) => a.k - b.k).map(o => o.p);
       };
       const TS = darts(260, 50, (x, y) => free(x, y, 32) && !inClear(x, y, 25));
