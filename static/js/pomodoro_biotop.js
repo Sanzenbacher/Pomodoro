@@ -445,6 +445,360 @@ fuchs(c, x, y, s, a, t) {
   c.restore();
 }};
 
+/* ------------------------------------------------------------ Entwicklung */
+
+/* Ein Tier kommt als Ei und waechst in Tagen ab dem Tag, an dem es kam
+ * (World.originOf): Ei, Baby (grosser Kopf, kleiner Koerper), Jungtier
+ * (kleiner als ausgewachsen), ausgewachsen. days: wie lange die Stufe dauert. */
+const STAGES = [{ id: 'ei', name: 'Ei', days: 2 }, { id: 'baby', name: 'Baby', days: 3 }, { id: 'jung', name: 'Jungtier', days: 4 }, { id: 'adult', name: 'ausgewachsen' }];
+const YOUNG = .7;
+function stageOf(age) {
+  let acc = 0;
+  for (let i = 0; i < 3; i++) { acc += STAGES[i].days; if (age < acc) return i; }
+  return 3;
+}
+/* Tag (relativ zur Ankunft), an dem Stufe k beginnt. */
+function stageStart(k) { let acc = 0; for (let i = 0; i < k; i++) acc += STAGES[i].days; return acc; }
+/* Bezeichnung einer Stufe fuer ein Tier, z.B. "Igel (Ei)". */
+function stageName(sp, name, st) {
+  if (st === 3) return name;
+  return name + ' (' + (st === 1 && sp === 'schmetterling' ? 'Raupe' : STAGES[st].name) + ')';
+}
+
+// Ei, unten breiter als oben, Fuss bei (0,0) nach translate. pat zeichnet
+// ein Muster ins Ei (geclippt), rx/ry halbe Breite/Hoehe.
+function eggShape(c, rx, ry, col, pat) {
+  const rb = ry * .85, rt = ry * 1.15;
+  c.beginPath(); c.ellipse(0, -rb, rx, rt, 0, Math.PI, TAU); c.ellipse(0, -rb, rx, rb, 0, 0, Math.PI); c.closePath();
+  c.fillStyle = col; c.fill();
+  if (pat) { c.save(); c.clip(); pat(c); c.restore(); }
+  c.fillStyle = 'rgba(255,255,255,.45)'; el(c, -rx * .38, -ry * 1.3, rx * .24, ry * .32, -.3);
+}
+// Ab und zu wackelt ein Ei, als wolle gleich etwas heraus.
+function egg(c, x, y, s, a, t, rx, ry, col, pat) {
+  const k = Math.sin(t * .8 + a.ph), rot = k > .9 ? Math.sin(t * 26) * .13 : 0;
+  c.fillStyle = 'rgba(30,40,15,.22)'; el(c, x, y, rx * 1.2 * s, rx * .45 * s, 0);
+  c.save(); c.translate(x, y); c.rotate(rot); eggShape(c, rx * s, ry * s, col, pat); c.restore();
+}
+const dots = (c, col, pts, r) => { c.fillStyle = col; pts.forEach(([x, y, k]) => el(c, x, y, r * (k || 1), r * (k || 1), 0)); };
+
+const EGG = {
+biene(c, x, y, s, a, t) {
+  // Drei Waben, in zwei davon ein Bienenei
+  c.fillStyle = 'rgba(30,40,15,.2)'; el(c, x, y, 9 * s, 3 * s, 0);
+  const hex = (cx, cy, r, col) => { c.fillStyle = col; c.beginPath(); for (let i = 0; i < 6; i++) { const g = i * Math.PI / 3; c.lineTo(cx + Math.cos(g) * r, cy + Math.sin(g) * r * .62); } c.closePath(); c.fill(); };
+  [[-3.4, -4.6], [3.4, -4.6], [0, -2]].forEach(([dx, dy], i) => {
+    const cx = x + dx * s, cy = y + dy * s;
+    hex(cx, cy, 4 * s, '#c98a22'); hex(cx, cy - .4 * s, 3.1 * s, '#f2c75a'); hex(cx, cy - .2 * s, 2.2 * s, '#e0a83a');
+    if (i) { c.fillStyle = '#fbf8ee'; el(c, cx, cy - .3 * s, 1.5 * s, .8 * s, .5); c.fillStyle = '#fff'; el(c, cx - .4 * s, cy - .6 * s, .5 * s, .3 * s, .5); }
+  });
+},
+schmetterling(c, x, y, s, a, t, e) {
+  // Ein Blatt mit drei gerippten Eiern
+  c.fillStyle = 'rgba(30,40,15,.2)'; el(c, x, y, 8 * s, 2.6 * s, 0);
+  c.fillStyle = e && e.season === 'autumn' ? '#a8903a' : '#5f9a3e'; el(c, x, y - 1.5 * s, 8 * s, 3 * s, -.15);
+  c.strokeStyle = 'rgba(255,255,255,.3)'; c.lineWidth = .6 * s; line(c, x - 7 * s, y - .4 * s, x + 7 * s, y - 2.6 * s);
+  [[-3, 0], [0, -.6], [3, -1.2]].forEach(([dx, dy]) => {
+    c.save(); c.translate(x + dx * s, y + (dy - 1.2) * s);
+    eggShape(c, 1.3 * s, 1.8 * s, '#eef2c8', c2 => { c2.strokeStyle = 'rgba(150,160,90,.6)'; c2.lineWidth = .3 * s; for (let i = -1; i <= 1; i++) line(c2, i * .55 * s, 0, i * .45 * s, -3.6 * s); });
+    c.restore();
+  });
+},
+igel(c, x, y, s, a, t) {
+  egg(c, x, y, s, a, t, 3.8, 4.8, '#a8865e', c2 => {
+    for (let r = 0; r < 5; r++) for (let i = 0; i < 4; i++) {
+      const px = (-3 + i * 2 + (r % 2)) * s, py = (-1.4 - r * 1.8) * s;
+      c2.fillStyle = '#5a3e26'; c2.beginPath(); c2.moveTo(px - .5 * s, py); c2.lineTo(px, py - 1.3 * s); c2.lineTo(px + .5 * s, py); c2.fill();
+    }
+  });
+},
+hase(c, x, y, s, a, t) {
+  // Wie ein Osterei
+  egg(c, x, y, s, a, t, 3.8, 4.8, '#f4c9d6', c2 => {
+    c2.fillStyle = '#fff1b0'; c2.fillRect(-5 * s, -5.6 * s, 10 * s, 2.2 * s);
+    c2.strokeStyle = '#8fc4e8'; c2.lineWidth = .8 * s; c2.beginPath();
+    for (let i = 0; i <= 10; i++) c2.lineTo((-5 + i) * s, (i % 2 ? -5.8 : -3.4) * s);
+    c2.stroke();
+    dots(c2, '#b9a4f2', [[-1.6, -1.6], [1.6, -1.6], [0, -7.4], [-2, -7.8], [2, -7.8]], .55 * s);
+  });
+},
+schnecke(c, x, y, s) {
+  // Ein Haeufchen Perleier
+  c.fillStyle = 'rgba(30,40,15,.2)'; el(c, x, y, 6 * s, 2 * s, 0);
+  [[-3, -1.4], [0, -1.2], [3, -1.4], [-1.5, -3.4], [1.5, -3.4], [0, -5.4]].forEach(([dx, dy]) => {
+    c.fillStyle = '#e8e0c8'; el(c, x + dx * s, y + dy * s, 1.7 * s, 1.7 * s, 0);
+    c.fillStyle = '#fbf8ef'; el(c, x + (dx - .2) * s, y + (dy - .2) * s, 1.3 * s, 1.3 * s, 0);
+    c.fillStyle = '#fff'; el(c, x + (dx - .6) * s, y + (dy - .6) * s, .4 * s, .4 * s, 0);
+  });
+},
+rotkehlchen(c, x, y, s, a, t) {
+  // Gesprenkeltes Ei im Nest
+  c.fillStyle = 'rgba(30,40,15,.22)'; el(c, x, y + .5 * s, 8 * s, 2.6 * s, 0);
+  c.fillStyle = '#5e4026'; el(c, x, y - 2.4 * s, 7 * s, 2.8 * s, 0);
+  const k = Math.sin(t * .8 + a.ph), rot = k > .9 ? Math.sin(t * 26) * .13 : 0;
+  c.save(); c.translate(x, y - 1.6 * s); c.rotate(rot);
+  eggShape(c, 2.8 * s, 3.6 * s, '#f1e6cf', c2 => dots(c2, '#b8573a', [[-1, -1.5], [1.2, -2.6], [-.4, -4], [1, -5.4], [-1.6, -3.4], [.4, -6.4], [-.8, -5.8], [1.6, -1]], .45 * s));
+  c.restore();
+  c.fillStyle = '#7a5a3a'; c.beginPath(); c.ellipse(x, y - 2.4 * s, 7 * s, 3.4 * s, 0, 0, Math.PI); c.fill();
+  c.strokeStyle = '#a0784a'; c.lineWidth = .6 * s;
+  for (let i = 0; i < 6; i++) line(c, x + (-6 + i * 2) * s, y - (1.4 + i % 2) * s, x + (-4 + i * 2) * s, y + (i % 2 - .2) * s);
+},
+frosch(c, x, y, s, a, t) {
+  // Laich: durchsichtige Kugeln mit dunklem Kern
+  c.fillStyle = 'rgba(70,120,150,.25)'; el(c, x, y - .5 * s, 8 * s, 3 * s, 0);
+  [[-4, -1.6], [-1.3, -1.2], [1.4, -1.4], [4, -1.7], [-2.6, -3.6], [0, -3.4], [2.7, -3.6], [-1.3, -5.6], [1.3, -5.6]].forEach(([dx, dy], i) => {
+    const px = x + dx * s, py = y + dy * s;
+    c.fillStyle = 'rgba(215,236,240,.7)'; el(c, px, py, 1.6 * s, 1.6 * s, 0);
+    c.fillStyle = '#1f2a1a'; el(c, px + Math.sin(t * 2 + i) * .15 * s, py, .65 * s, .65 * s, 0);
+    c.fillStyle = 'rgba(255,255,255,.7)'; el(c, px - .6 * s, py - .6 * s, .35 * s, .35 * s, 0);
+  });
+},
+eichhoernchen(c, x, y, s, a, t) {
+  // Rotbraun mit Eichelhuetchen
+  egg(c, x, y, s, a, t, 3.6, 4.6, '#c4652f', c2 => { c2.fillStyle = '#f0d9b5'; el(c2, 0, -2.4 * s, 2.2 * s, 1.8 * s, 0); });
+  const k = Math.sin(t * .8 + a.ph), rot = k > .9 ? Math.sin(t * 26) * .13 : 0;
+  c.save(); c.translate(x, y); c.rotate(rot);
+  c.fillStyle = '#7a5230'; c.beginPath(); c.ellipse(0, -8 * s, 2.8 * s, 2 * s, 0, Math.PI, TAU); c.fill();
+  c.strokeStyle = '#5a3a20'; c.lineWidth = .4 * s; for (let i = -2; i <= 2; i++) line(c, i * s, -8 * s, i * .8 * s, -9.6 * s);
+  c.strokeStyle = '#5a3a20'; c.lineWidth = .7 * s; line(c, 0, -10 * s, .6 * s, -11.4 * s);
+  c.restore();
+},
+specht(c, x, y, s, a, t) {
+  // Weisses Ei mit schwarzer Kappe und rotem Fleck
+  egg(c, x, y, s, a, t, 3.4, 4.4, '#f6f3ea', c2 => {
+    c2.fillStyle = '#2a2a2a'; el(c2, 0, -8.6 * s, 4 * s, 2.2 * s, 0);
+    c2.fillStyle = '#d23a2a'; el(c2, -1 * s, -7.4 * s, 1.4 * s, .8 * s, 0);
+  });
+},
+eule(c, x, y, s, a, t) {
+  // Fast rund, mit zwei Federbueschelchen
+  egg(c, x, y, s, a, t, 3.9, 4.2, '#efe6d2', c2 => dots(c2, '#cdbb98', [[-1.6, -2], [1.4, -3], [-.4, -5], [1.8, -6], [-2, -5.4]], .4 * s));
+  const k = Math.sin(t * .8 + a.ph), rot = k > .9 ? Math.sin(t * 26) * .13 : 0;
+  c.save(); c.translate(x, y); c.rotate(rot); c.fillStyle = '#7a5a3a';
+  c.beginPath(); c.moveTo(-2.4 * s, -8 * s); c.lineTo(-2.6 * s, -10 * s); c.lineTo(-1 * s, -8.4 * s); c.moveTo(2.4 * s, -8 * s); c.lineTo(2.6 * s, -10 * s); c.lineTo(1 * s, -8.4 * s); c.fill();
+  c.restore();
+},
+reh(c, x, y, s, a, t) {
+  // Braun mit weissen Kitzflecken
+  egg(c, x, y, s, a, t, 4.2, 5.4, '#b07a45', c2 => dots(c2, '#f3ead8', [[-2, -2.4], [1, -1.8], [2.6, -3.6], [-.6, -4.4], [-2.8, -5.6], [1.6, -6.2], [-.4, -8], [2.4, -8.4], [-2.2, -8.8]], .6 * s));
+},
+wildschwein(c, x, y, s, a, t) {
+  // Laengsstreifen wie beim Frischling
+  egg(c, x, y, s, a, t, 4.2, 5.4, '#6b5340', c2 => {
+    c2.strokeStyle = '#b89a72'; c2.lineWidth = .8 * s;
+    for (let i = -3; i <= 3; i += 1.5) { c2.beginPath(); c2.moveTo(i * s, 0); c2.quadraticCurveTo(i * 1.25 * s, -6 * s, i * .5 * s, -12.4 * s); c2.stroke(); }
+  });
+},
+fuchs(c, x, y, s, a, t) {
+  // Orange mit weisser Spitze wie die Schwanzspitze
+  egg(c, x, y, s, a, t, 4, 5.2, '#d96b28', c2 => {
+    c2.fillStyle = '#f3ead8'; el(c2, 0, -10.4 * s, 4.6 * s, 2.4 * s, 0);
+    c2.fillStyle = '#7a3a1a'; el(c2, 0, .6 * s, 5 * s, 1.6 * s, 0);
+  });
+}};
+
+// Grosses Babyauge mit Glanzpunkt
+function eye(c, x, y, r) { c.fillStyle = '#1a1a1a'; el(c, x, y, r, r * 1.1, 0); c.fillStyle = '#fff'; el(c, x + r * .35, y - r * .4, r * .38, r * .38, 0); }
+// Babys laufen in kleinen Hopsern, Ursprung am Boden, Blick nach a.dir.
+function babyStart(c, x, y, s, a, t, hop, sp) {
+  const h = a.mv ? Math.abs(Math.sin(t * (sp || 9) + a.ph)) * (hop == null ? 1.5 : hop) * s : 0;
+  c.fillStyle = 'rgba(30,40,15,.2)'; el(c, x, y, 6 * s, 1.8 * s, 0);
+  c.save(); c.translate(x, y - h); c.scale(a.dir, 1);
+}
+
+const BABY = {
+biene(c, x, y, s, a, t) {
+  babyStart(c, x, y, s, a, t, 1, 14);
+  const f = Math.abs(Math.sin(t * 30 + a.ph));
+  c.fillStyle = 'rgba(255,255,255,.8)'; el(c, -2.6 * s, -6.4 * s, 1.8 * s, (.8 + .6 * f) * s, -.5);
+  c.fillStyle = '#f2c12e'; el(c, -2.4 * s, -2.8 * s, 3.4 * s, 2.6 * s, 0);
+  c.fillStyle = '#2b2b2b'; el(c, -3 * s, -2.8 * s, .8 * s, 2.4 * s, 0); el(c, -5.4 * s, -2.8 * s, .6 * s, .8 * s, 0);
+  c.fillStyle = '#f5cd45'; el(c, 2.4 * s, -5 * s, 3.8 * s, 3.6 * s, 0);
+  c.strokeStyle = '#2b2b2b'; c.lineWidth = .5 * s; line(c, 2 * s, -8.2 * s, 1.4 * s, -10.4 * s); line(c, 3.4 * s, -8.2 * s, 4.6 * s, -10.2 * s);
+  dots(c, '#2b2b2b', [[1.4, -10.5], [4.7, -10.3]], .6 * s);
+  eye(c, 3.8 * s, -5.6 * s, 1.1 * s);
+  c.fillStyle = 'rgba(230,120,100,.5)'; el(c, 5 * s, -3.8 * s, .8 * s, .5 * s, 0);
+  c.restore();
+},
+schmetterling(c, x, y, s, a, t) {
+  // Raupe: kleine Segmente, grosser Kopf
+  babyStart(c, x, y, s, a, t, 0);
+  for (let i = 4; i >= 1; i--) {
+    const w = a.mv ? Math.max(0, Math.sin(t * 6 + a.ph - i * .9)) * 1.2 * s : 0;
+    c.fillStyle = i % 2 ? '#7cba4a' : '#6aa83e'; el(c, -i * 2.4 * s + 1.4 * s, -1.8 * s - w, 1.8 * s, 1.8 * s, 0);
+    c.fillStyle = a.col; el(c, -i * 2.4 * s + 1.4 * s, -2.8 * s - w, .5 * s, .5 * s, 0);
+  }
+  c.fillStyle = '#8ccb58'; el(c, 2.4 * s, -3.6 * s, 3 * s, 2.9 * s, 0);
+  c.strokeStyle = '#3a2a20'; c.lineWidth = .5 * s; line(c, 1.6 * s, -6.2 * s, .8 * s, -8 * s); line(c, 3 * s, -6.2 * s, 3.8 * s, -8 * s);
+  dots(c, a.col, [[.8, -8.1], [3.8, -8.1]], .55 * s);
+  eye(c, 3.5 * s, -4 * s, .95 * s);
+  c.restore();
+},
+igel(c, x, y, s, a, t) {
+  babyStart(c, x, y, s, a, t, 1, 10);
+  c.fillStyle = '#7b5a3b'; c.beginPath(); c.moveTo(-5.5 * s, 0);
+  for (let i = 0; i <= 12; i++) { const g = Math.PI - i * Math.PI / 12, r = (i % 2 ? 5.8 : 4.6) * s; c.lineTo(-1 * s + Math.cos(g) * r, -Math.sin(g) * r * .85); }
+  c.closePath(); c.fill();
+  c.fillStyle = '#e2c09a'; el(c, 3.6 * s, -3.6 * s, 3.4 * s, 3 * s, 0); el(c, 6.6 * s, -2.8 * s, 1.6 * s, 1.2 * s, 0);
+  c.fillStyle = '#c9a07a'; el(c, 2.4 * s, -6.2 * s, 1 * s, .9 * s, 0);
+  c.fillStyle = '#1a1a1a'; el(c, 8 * s, -2.8 * s, .7 * s, .6 * s, 0);
+  eye(c, 4.4 * s, -4.4 * s, .9 * s);
+  c.restore();
+},
+hase(c, x, y, s, a, t, e) {
+  babyStart(c, x, y, s, a, t, 3, 8);
+  const fur = e && e.snow ? '#fbfbf8' : '#ece4d8', ear = e && e.snow ? '#e8e8e2' : '#ddd2c2';
+  c.fillStyle = fur; el(c, -1.4 * s, -2.8 * s, 3.8 * s, 2.8 * s, 0);
+  c.fillStyle = '#fff'; el(c, -5 * s, -3.4 * s, 1.4 * s, 1.4 * s, 0);
+  c.fillStyle = ear; el(c, 1.8 * s, -11 * s, 1.1 * s, 3.2 * s, -.35); el(c, 4 * s, -11.2 * s, 1.1 * s, 3.2 * s, .15);
+  c.fillStyle = '#f0b8c4'; el(c, 1.8 * s, -11 * s, .5 * s, 2.2 * s, -.35); el(c, 4 * s, -11.2 * s, .5 * s, 2.2 * s, .15);
+  c.fillStyle = fur; el(c, 3 * s, -5.8 * s, 3.8 * s, 3.4 * s, 0);
+  eye(c, 4.4 * s, -6.2 * s, .95 * s);
+  c.fillStyle = '#e89aa8'; el(c, 6.6 * s, -5 * s, .6 * s, .5 * s, 0);
+  c.fillStyle = 'rgba(232,154,168,.45)'; el(c, 4.6 * s, -4.4 * s, .9 * s, .5 * s, 0);
+  c.restore();
+},
+schnecke(c, x, y, s, a) {
+  babyStart(c, x, y, s, a, 0, 0);
+  c.fillStyle = '#d4ca96'; el(c, .6 * s, -1 * s, 5 * s, 1.3 * s, 0);
+  c.fillStyle = '#e0a95a'; el(c, -1.6 * s, -3.4 * s, 2.8 * s, 2.8 * s, 0);
+  c.strokeStyle = '#a8742e'; c.lineWidth = .6 * s; c.beginPath();
+  for (let i = 0; i < 22; i++) { const g = i * .5, r = i * .11 * s; c.lineTo(-1.6 * s + Math.cos(g) * r, -3.4 * s + Math.sin(g) * r); }
+  c.stroke();
+  c.fillStyle = '#d4ca96'; el(c, 4.4 * s, -2.8 * s, 2.4 * s, 2.2 * s, 0);
+  c.strokeStyle = '#c2b880'; c.lineWidth = .6 * s; line(c, 4 * s, -4.4 * s, 3.6 * s, -6.6 * s); line(c, 5.2 * s, -4.4 * s, 6 * s, -6.4 * s);
+  eye(c, 3.6 * s, -6.8 * s, .8 * s); eye(c, 6 * s, -6.6 * s, .8 * s);
+  c.restore();
+},
+rotkehlchen(c, x, y, s, a, t) {
+  babyStart(c, x, y, s, a, t, 1.5, 10);
+  c.strokeStyle = '#d8a050'; c.lineWidth = .6 * s; line(c, -.8 * s, -1 * s, -.8 * s, 0); line(c, .8 * s, -1 * s, .8 * s, 0);
+  c.fillStyle = '#9a7a5a'; el(c, 0, -3.4 * s, 3.6 * s, 3 * s, 0);
+  c.fillStyle = '#7a5a40'; el(c, -1.6 * s, -3.6 * s, 1.8 * s, 1.2 * s, -.4);
+  c.fillStyle = '#8a6a4a'; el(c, 1.4 * s, -7.6 * s, 3.8 * s, 3.5 * s, 0);
+  c.fillStyle = '#ec8a5c'; el(c, 2.6 * s, -5.4 * s, 2.4 * s, 1.6 * s, 0);
+  c.strokeStyle = '#8a6a4a'; c.lineWidth = .5 * s; line(c, 1 * s, -11 * s, .4 * s, -12.2 * s); line(c, 1.6 * s, -11 * s, 2 * s, -12.4 * s);
+  c.fillStyle = '#f5d04a'; c.beginPath(); c.moveTo(4.8 * s, -8.2 * s); c.lineTo(7.2 * s, -7.4 * s); c.lineTo(4.8 * s, -6.6 * s); c.fill();
+  eye(c, 3.2 * s, -8.4 * s, .95 * s);
+  c.restore();
+},
+frosch(c, x, y, s, a, t) {
+  // Froeschlein, von vorn
+  const h = a.mv ? Math.abs(Math.sin(t * 6 + a.ph)) * 3 * s : 0;
+  c.fillStyle = 'rgba(30,40,15,.2)'; el(c, x, y, 5 * s, 1.6 * s, 0);
+  c.save(); c.translate(x, y - h);
+  c.fillStyle = '#5aa848'; el(c, -3 * s, -.6 * s, 1.6 * s, .9 * s, 0); el(c, 3 * s, -.6 * s, 1.6 * s, .9 * s, 0); el(c, 0, -2.2 * s, 3 * s, 2.2 * s, 0);
+  el(c, 0, -5.2 * s, 4.4 * s, 3.2 * s, 0);
+  c.fillStyle = '#8acc6a'; el(c, 0, -4.2 * s, 2.6 * s, 1.6 * s, 0);
+  c.fillStyle = '#fff'; el(c, -2.4 * s, -8 * s, 1.9 * s, 1.9 * s, 0); el(c, 2.4 * s, -8 * s, 1.9 * s, 1.9 * s, 0);
+  eye(c, -2.2 * s, -7.8 * s, 1.1 * s); eye(c, 2.6 * s, -7.8 * s, 1.1 * s);
+  c.strokeStyle = '#2e5a24'; c.lineWidth = .5 * s; c.beginPath(); c.arc(0, -5.4 * s, 1.4 * s, .3, Math.PI - .3); c.stroke();
+  c.restore();
+},
+eichhoernchen(c, x, y, s, a, t) {
+  babyStart(c, x, y, s, a, t, 2, 12);
+  c.fillStyle = '#c4652f'; el(c, -4 * s, -5 * s, 2.2 * s, 3.6 * s, -.4);
+  c.fillStyle = '#b5562a'; el(c, -.6 * s, -2.6 * s, 3 * s, 2.4 * s, 0);
+  c.fillStyle = '#f0d9b5'; el(c, .6 * s, -2 * s, 1.4 * s, 1.2 * s, 0);
+  c.fillStyle = '#b5562a'; el(c, 2.6 * s, -6.4 * s, 3.4 * s, 3.2 * s, 0); el(c, 1.4 * s, -9.6 * s, .8 * s, 1.3 * s, -.2); el(c, 3.4 * s, -9.6 * s, .8 * s, 1.3 * s, .2);
+  c.fillStyle = '#f0d9b5'; el(c, 4.4 * s, -5.2 * s, 1.6 * s, 1.2 * s, 0);
+  eye(c, 3.8 * s, -7 * s, .95 * s);
+  c.fillStyle = '#3a2a20'; el(c, 5.9 * s, -5.8 * s, .5 * s, .4 * s, 0);
+  c.restore();
+},
+specht(c, x, y, s, a, t) {
+  babyStart(c, x, y, s, a, t, 1.5, 10);
+  c.strokeStyle = '#555'; c.lineWidth = .6 * s; line(c, -.8 * s, -1 * s, -.8 * s, 0); line(c, .8 * s, -1 * s, .8 * s, 0);
+  c.fillStyle = '#3a3a3a'; el(c, 0, -3.4 * s, 3.4 * s, 3 * s, 0);
+  c.fillStyle = '#f2f0ea'; el(c, 1 * s, -2.8 * s, 1.8 * s, 2 * s, 0);
+  c.fillStyle = '#2a2a2a'; el(c, 1.4 * s, -7.6 * s, 3.6 * s, 3.4 * s, 0);
+  c.fillStyle = '#d23a2a'; el(c, .8 * s, -10.4 * s, 2 * s, 1.1 * s, 0);
+  c.fillStyle = '#f2f0ea'; el(c, 2.8 * s, -6.6 * s, 1.6 * s, 1.1 * s, 0);
+  c.fillStyle = '#666'; c.beginPath(); c.moveTo(4.6 * s, -8 * s); c.lineTo(7 * s, -7.6 * s); c.lineTo(4.6 * s, -7 * s); c.fill();
+  c.fillStyle = '#fff'; el(c, 3 * s, -8.4 * s, 1.2 * s, 1.2 * s, 0); eye(c, 3.2 * s, -8.4 * s, .85 * s);
+  c.restore();
+},
+eule(c, x, y, s, a, t) {
+  // Flauschiges Kueken, von vorn
+  const bl = Math.sin(t * .9 + a.ph) > .96;
+  c.fillStyle = 'rgba(30,40,15,.2)'; el(c, x, y, 5 * s, 1.6 * s, 0);
+  c.save(); c.translate(x, y);
+  c.fillStyle = '#d8c8ae'; el(c, 0, -3 * s, 3.8 * s, 3.2 * s, 0);
+  c.strokeStyle = '#e8a11c'; c.lineWidth = .6 * s; line(c, -1 * s, -.6 * s, -1 * s, 0); line(c, 1 * s, -.6 * s, 1 * s, 0);
+  c.fillStyle = '#e4d6be'; el(c, 0, -8.4 * s, 4.8 * s, 4.2 * s, 0);
+  c.strokeStyle = '#e4d6be'; c.lineWidth = .6 * s; line(c, -1 * s, -12.4 * s, -1.6 * s, -13.6 * s); line(c, 0, -12.6 * s, 0, -13.8 * s); line(c, 1 * s, -12.4 * s, 1.6 * s, -13.6 * s);
+  c.fillStyle = '#f6efe2'; el(c, -2 * s, -8.6 * s, 2.2 * s, 2.2 * s, 0); el(c, 2 * s, -8.6 * s, 2.2 * s, 2.2 * s, 0);
+  if (bl) { c.strokeStyle = '#3a2a20'; c.lineWidth = .7 * s; line(c, -3.4 * s, -8.6 * s, -.6 * s, -8.6 * s); line(c, .6 * s, -8.6 * s, 3.4 * s, -8.6 * s); }
+  else {
+    c.fillStyle = '#e8a11c'; el(c, -2 * s, -8.6 * s, 1.6 * s, 1.6 * s, 0); el(c, 2 * s, -8.6 * s, 1.6 * s, 1.6 * s, 0);
+    eye(c, -2 * s, -8.6 * s, .9 * s); eye(c, 2 * s, -8.6 * s, .9 * s);
+  }
+  c.fillStyle = '#c9a050'; c.beginPath(); c.moveTo(-.6 * s, -6.8 * s); c.lineTo(.6 * s, -6.8 * s); c.lineTo(0, -5.6 * s); c.fill();
+  c.restore();
+},
+reh(c, x, y, s, a, t) {
+  // Kitz: kurzer gefleckter Koerper, grosser Kopf, grosse Ohren
+  const ph = t * 9 + a.ph;
+  c.fillStyle = 'rgba(30,40,15,.2)'; el(c, x, y, 7 * s, 2 * s, 0);
+  c.save(); c.translate(x, y); c.scale(a.dir, 1);
+  c.strokeStyle = '#7e5630'; c.lineWidth = 1 * s;
+  [[-4, 0], [-2.6, 1.6], [2.6, .8], [4, 2.4]].forEach(([lx, o]) => { const sw = a.mv ? Math.sin(ph + o) * 1.2 * s : 0; line(c, lx * s, -5 * s, lx * s + sw, 0); });
+  c.fillStyle = '#c08a52'; el(c, 0, -6.6 * s, 5.4 * s, 2.8 * s, 0);
+  dots(c, '#f6eedc', [[-2.6, -7.2], [-.6, -7.8], [1.4, -7.2], [-1.6, -5.8], [.6, -6], [2.8, -6.4]], .5 * s);
+  c.fillStyle = '#c08a52'; el(c, 5.4 * s, -10.4 * s, 3.6 * s, 3 * s, 0); el(c, 7.8 * s, -9.4 * s, 1.8 * s, 1.4 * s, 0);
+  el(c, 3 * s, -13.6 * s, 1.1 * s, 2.6 * s, -.6); el(c, 5.2 * s, -14 * s, 1.1 * s, 2.6 * s, .1);
+  c.fillStyle = '#f0c8a8'; el(c, 3 * s, -13.6 * s, .5 * s, 1.6 * s, -.6);
+  eye(c, 6 * s, -11 * s, 1 * s);
+  c.fillStyle = '#1a1a1a'; el(c, 9.4 * s, -9.4 * s, .6 * s, .5 * s, 0);
+  c.restore();
+},
+wildschwein(c, x, y, s, a, t) {
+  // Frischling mit Laengsstreifen
+  const ph = t * 12 + a.ph;
+  c.fillStyle = 'rgba(30,40,15,.2)'; el(c, x, y, 7 * s, 2 * s, 0);
+  c.save(); c.translate(x, y); c.scale(a.dir, 1);
+  c.strokeStyle = '#3e3024'; c.lineWidth = 1.1 * s;
+  [-3, -1.4, 1.6, 3.2].forEach((lx, i) => { const sw = a.mv ? Math.sin(ph + i * 1.6) * .9 * s : 0; line(c, lx * s, -2.4 * s, lx * s + sw, 0); });
+  c.fillStyle = '#8a6a4e'; el(c, 0, -4.4 * s, 5 * s, 3 * s, 0);
+  c.strokeStyle = '#d2b48a'; c.lineWidth = .6 * s;
+  [-5.6, -4.4, -3.2].forEach(yy => { c.beginPath(); c.moveTo(-4.2 * s, (yy + 1) * s); c.quadraticCurveTo(0, (yy - .4) * s, 4 * s, (yy + .8) * s); c.stroke(); });
+  c.strokeStyle = '#6a5240'; c.lineWidth = .5 * s; c.beginPath(); c.arc(-5.2 * s, -5.4 * s, .8 * s, 0, Math.PI * 1.5); c.stroke();
+  c.fillStyle = '#7a5a44'; el(c, 4.6 * s, -5.6 * s, 3.4 * s, 3.2 * s, 0); el(c, 3.4 * s, -8.6 * s, .9 * s, 1.4 * s, -.4);
+  c.fillStyle = '#c79a83'; el(c, 7.6 * s, -4.6 * s, 1.3 * s, 1.3 * s, 0);
+  c.fillStyle = '#6a4a3a'; el(c, 7.9 * s, -4.8 * s, .3 * s, .4 * s, 0); el(c, 7.3 * s, -4.8 * s, .3 * s, .4 * s, 0);
+  eye(c, 5.2 * s, -6.6 * s, .9 * s);
+  c.restore();
+},
+fuchs(c, x, y, s, a, t) {
+  // Welpe: grosse Ohren, kleiner Koerper
+  const ph = t * 12 + a.ph;
+  c.fillStyle = 'rgba(30,40,15,.2)'; el(c, x, y, 7 * s, 2 * s, 0);
+  c.save(); c.translate(x, y); c.scale(a.dir, 1);
+  c.strokeStyle = '#3a2a20'; c.lineWidth = .9 * s;
+  [-3, -1.6, 1.4, 2.8].forEach((lx, i) => { const sw = a.mv ? Math.sin(ph + i * 1.6) * 1 * s : 0; line(c, lx * s, -2.6 * s, lx * s + sw, 0); });
+  c.fillStyle = '#d96b28'; el(c, -6 * s, -4.4 * s, 3 * s, 1.5 * s, .35);
+  c.fillStyle = '#f3ead8'; el(c, -8.4 * s, -3.4 * s, 1.2 * s, 1 * s, .35);
+  c.fillStyle = '#d96b28'; el(c, -.4 * s, -4 * s, 4 * s, 2.4 * s, 0);
+  c.beginPath(); c.moveTo(1.4 * s, -9 * s); c.lineTo(1.6 * s, -13.6 * s); c.lineTo(4 * s, -10.2 * s); c.moveTo(3.8 * s, -10.2 * s); c.lineTo(6.2 * s, -13.6 * s); c.lineTo(6.6 * s, -9 * s); c.fill();
+  el(c, 4 * s, -7.6 * s, 3.8 * s, 3.2 * s, 0);
+  c.fillStyle = '#3a2a20'; c.beginPath(); c.moveTo(2 * s, -10.6 * s); c.lineTo(2.1 * s, -12.6 * s); c.lineTo(3.2 * s, -10.8 * s); c.moveTo(4.8 * s, -10.8 * s); c.lineTo(5.9 * s, -12.6 * s); c.lineTo(6 * s, -10.4 * s); c.fill();
+  c.fillStyle = '#f3ead8'; el(c, 5.8 * s, -6.4 * s, 2.2 * s, 1.4 * s, 0);
+  eye(c, 4.8 * s, -8.2 * s, .95 * s);
+  c.fillStyle = '#1a1a1a'; el(c, 7.8 * s, -6.8 * s, .6 * s, .5 * s, 0);
+  c.restore();
+}};
+
+/* Eier und Babys kleiner Tiere schrumpfen mit, damit sie im Bild nicht
+ * groesser als die Eltern sind (Icons zeichnen sie ohne). */
+const SMALL = { biene: .55, schmetterling: .6, rotkehlchen: .7, frosch: .75, specht: .75, schnecke: .8, eule: .8, igel: .8, hase: .8, eichhoernchen: .8 };
+/* Ein Tier in seiner Stufe zeichnen (a.stage, siehe STAGES). */
+function drawAnimal(c, a, x, y, s, t, e, icon) {
+  const st = a.stage == null ? 3 : a.stage, k = icon ? 1 : SMALL[a.sp] || 1;
+  if (st === 0) EGG[a.sp](c, x, y, s * k, a, t, e);
+  else if (st === 1) BABY[a.sp](c, x, y, s * k, a, t, e);
+  else AD[a.sp](c, x, y, st === 2 ? s * YOUNG : s, a, t, e);
+}
+
 /* ------------------------------------------------------------ Regeln */
 
 function per(h, p) {
@@ -1050,14 +1404,41 @@ class World {
       for (let j = cur.length; j < want; j++) {
         const [x, y] = this.target(a.id), bc = [['#f08a3c', '#f7c35a'], ['#e65b8f', '#f4c0d1'], ['#5b9be6', '#b5d4f4']][j % 3];
         const fly = (ANIMALS[this.theme].find(z => z.id === a.id) || {}).fly || 0;
-        this.A.push({ sp: a.id, name: a.name, fly, x: cl(x, 50, 950), y: cl(y, 50, 850), tx: x, ty: y, wait: Math.random() * 2, ph: Math.random() * 6, dir: 1,
-                      born: label ? t : -10, col: bc[0], col2: bc[1], mv: false });
-        if (label) born.push(a.name);
+        const n = { sp: a.id, name: a.name, fly, x: cl(x, 50, 950), y: cl(y, 50, 850), tx: x, ty: y, wait: Math.random() * 2, ph: Math.random() * 6, dir: 1,
+                    born: label ? t : -10, lt: label ? t : -10, col: bc[0], col2: bc[1], mv: false };
+        this.A.push(n);
+        if (label) born.push(n);
       }
       if (cur.length > want) { const drop = cur.slice(want); this.A = this.A.filter(x => !drop.includes(x)); }
     });
+    this.stages(t, label);
     this.dirty = true;
-    return born;
+    return born.map(n => stageName(n.sp, n.name, n.stage));
+  }
+  /* Stufe jedes Tiers am gezeigten Tag (STAGES). Waechst ein Tier in die
+   * naechste Stufe, zeigt label das im Bild. Eier und Babys bleiben am Boden
+   * (air: Flughoehe der Stufe). */
+  stages(t, label) {
+    const j = {};
+    this.A.forEach(a => {
+      const k = j[a.sp] = j[a.sp] == null ? 0 : j[a.sp] + 1, o = this.originOf(a.sp, k);
+      a.d = o ? o.d : -99;
+      const st = stageOf(this.day - a.d);
+      if (a.stage == null) a.ltxt = 'Neu: ' + stageName(a.sp, a.name, st);
+      else if (st > a.stage && label) {
+        a.lt = t;
+        a.ltxt = st === 1 ? 'Geschlüpft: ' + stageName(a.sp, a.name, 1) : st === 3 ? 'Ausgewachsen: ' + a.name : 'Gewachsen: ' + stageName(a.sp, a.name, st);
+      }
+      a.stage = st; a.air = st >= 2 ? a.fly : 0;
+    });
+  }
+  /* Entwicklung eines Tiers: Stufe, Alter in Tagen, Tag der Ankunft und
+   * der Tag, an dem die naechste Stufe beginnt (null, wenn ausgewachsen). */
+  stageInfo(a) {
+    const st = a.stage == null ? 3 : a.stage, age = Math.max(0, this.day - a.d);
+    return { stage: st, id: STAGES[st].id, name: st === 1 && a.sp === 'schmetterling' ? 'Raupe' : STAGES[st].name, label: stageName(a.sp, a.name, st),
+             age, d: a.d, next: st < 3 ? a.d + stageStart(st + 1) : null, nextName: st < 3 ? STAGES[st + 1].name : null,
+             fullDay: a.d + stageStart(3), g: Math.min(1, age / stageStart(3)) };
   }
 
   setDay(d) { this.day = d; this.syncAnimals(now(), true); this.changed(); }
@@ -1080,8 +1461,8 @@ class World {
     }
     const have = new Set(this.entries.map(key)), want = new Set(m.entries.map(key));
     if ([...have].some(k => !want.has(k))) return this.setEntries(m.entries.map(e => Object.assign({}, e, { fresh: false })), m.day);
-    this.day = m.day;
     let born = [];
+    if (this.day !== m.day) { this.day = m.day; born = this.syncAnimals(now(), true); this.changed(); }
     m.entries.filter(e => !have.has(key(e))).forEach(e => { born = born.concat(this.addEntry(Object.assign({}, e, { fresh: false }))); });
     return born;
   }
@@ -1132,10 +1513,11 @@ class World {
 
   update(dt) {
     this.A.forEach(a => {
-      if (a.wait > 0) { a.wait -= dt; a.mv = false; return; }
+      if (a.stage === 0 || a.wait > 0) { a.wait -= dt; a.mv = false; return; }
       const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy);
       if (d < 2) { const w = WAIT[a.sp]; a.wait = w[0] + Math.random() * (w[1] - w[0]); const [x, y] = this.target(a.sp); a.tx = cl(x, 50, 950); a.ty = cl(y, 50, 850); return; }
-      const st = Math.min(d, SPD[a.sp] * dt); a.x += dx / d * st; a.y += dy / d * st; a.mv = true;
+      const v = a.stage === 1 ? Math.min(SPD[a.sp] * .5, 24) : a.stage === 2 ? SPD[a.sp] * .8 : SPD[a.sp];
+      const st = Math.min(d, v * dt); a.x += dx / d * st; a.y += dy / d * st; a.mv = true;
       if (Math.abs(dx) > 1) a.dir = dx > 0 ? 1 : -1;
     });
     const W = this.cv.clientWidth, H = this.cv.clientHeight, kind = SEASON[this.season].part;
@@ -1190,18 +1572,19 @@ class World {
     const as = z * 1.65;
     this.A.forEach(a => {
       const [px, py] = P(a.x, a.y), lift = this.elev(a.x, a.y) * z;
-      if (a.fly) { if (a.mv || a.sp === 'biene' || a.sp === 'schmetterling') { c.fillStyle = 'rgba(30,40,15,.16)'; el(c, px, py - lift, 3 * as, 1.2 * as, 0); } return; }
-      // Wo es steht, fuer hit() und den Auswahlring
-      a._hx = px; a._hy = py - lift - 7 * as; a._hr = (a.sp === 'reh' || a.sp === 'wildschwein' || a.sp === 'fuchs' ? 15 : 10) * as + 5;
-      SP.push({ y: a.y, f: () => AD[a.sp](c, px, py - lift, as * Math.min(1, (t - a.born) * 3), a, t, e) });
+      if (a.air) { if (a.mv || a.sp === 'biene' || a.sp === 'schmetterling') { c.fillStyle = 'rgba(30,40,15,.16)'; el(c, px, py - lift, 3 * as, 1.2 * as, 0); } return; }
+      // Wo es steht, fuer hit() und den Auswahlring. Eier und Babys sind kleiner.
+      const k = [.5, .65, .8, 1][a.stage == null ? 3 : a.stage];
+      a._hx = px; a._hy = py - lift - 7 * as * k; a._hr = (a.sp === 'reh' || a.sp === 'wildschwein' || a.sp === 'fuchs' ? 15 : 10) * as * k + 5;
+      SP.push({ y: a.y, f: () => drawAnimal(c, a, px, py - lift, as * Math.min(1, (t - a.born) * 3), t, e) });
     });
     SP.sort((a, b) => a.y - b.y).forEach(o => o.f());
     this.A.forEach(a => {
-      if (!a.fly) return;
+      if (!a.air) return;
       const [px, py] = P(a.x, a.y), lift = this.elev(a.x, a.y) * z, bob = a.sp === 'biene' || a.sp === 'schmetterling';
-      const alt = bob ? a.fly + Math.sin(t * 3 + a.ph) * 4 : a.mv ? a.fly + 10 : a.fly;
-      a._hx = px; a._hy = py - lift - alt * as; a._hr = 9 * as + 5;
-      AD[a.sp](c, px, py - lift - alt * as, as * Math.min(1, (t - a.born) * 3), a, t, e);
+      const alt = bob ? a.air + Math.sin(t * 3 + a.ph) * 4 : a.mv ? a.air + 10 : a.air;
+      a._hx = px; a._hy = py - lift - alt * as; a._hr = 9 * as * (a.stage === 2 ? YOUNG : 1) + 5;
+      drawAnimal(c, a, px, py - lift - alt * as, as * Math.min(1, (t - a.born) * 3), t, e);
     });
     // Ausgewaehltes Tier oder Tier unter der Maus: Ring drumherum
     [[this.selected, 1], [this.hovered, .55]].forEach(([a, k]) => {
@@ -1211,10 +1594,10 @@ class World {
     });
     if (this.animate) this.drawParts(c, SEASON[this.season].part, z);
     if (this.labels) this.A.forEach(a => {
-      const age = t - a.born; if (age > 2.6) return;
-      const [px, py0] = P(a.x, a.y), py = py0 - this.elev(a.x, a.y) * z, h = (a.fly || 8) * as, yy = py - h - 24 * as;
+      const age = t - a.lt; if (age > 2.6 || !a.ltxt) return;
+      const [px, py0] = P(a.x, a.y), py = py0 - this.elev(a.x, a.y) * z, h = (a.air || 8) * as, yy = py - h - 24 * as;
       c.strokeStyle = 'rgba(255,255,255,' + (1 - age / 2.6) + ')'; c.lineWidth = 2; c.beginPath(); c.arc(px, py - h, (8 + age * 14) * as, 0, TAU); c.stroke();
-      const txt = 'Neu: ' + a.name; c.font = '500 12px Jost, system-ui, sans-serif';
+      const txt = a.ltxt; c.font = '500 12px Jost, system-ui, sans-serif';
       const w = c.measureText(txt).width + 14; c.fillStyle = 'rgba(255,255,255,.94)'; c.beginPath(); c.roundRect(px - w / 2, yy - 16, w, 21, 6); c.fill();
       c.fillStyle = '#27500A'; c.textAlign = 'center'; c.fillText(txt, px, yy - 1); c.textAlign = 'start';
     });
@@ -1457,11 +1840,15 @@ function drawPlantIcon(cv, id, season) {
 const A_ICON = { biene: [2.2, 0], schmetterling: [2, 0], igel: [1.6, 10], hase: [1.7, 14], schnecke: [2, 10], rotkehlchen: [2, 14], frosch: [2.1, 12],
                  eichhoernchen: [2, 12], specht: [2.4, 4], eule: [2.2, 4], reh: [1.25, 16], wildschwein: [1.45, 12], fuchs: [1.3, 12] };
 const A_DX = { reh: -3, wildschwein: -6, fuchs: 2, igel: -2 };
-function drawAnimalIcon(cv, id) {
-  const [k, dy] = A_ICON[id];
-  iconCanvas(cv, (c, W, H) => AD[id](c, W / 2 + (A_DX[id] || 0), H / 2 + dy, k * W / 46, { dir: 1, ph: 0, mv: false, col: '#f08a3c', col2: '#f7c35a' }, .3, {}));
+/* stage: Stufe aus STAGES (ohne: ausgewachsen). */
+function drawAnimalIcon(cv, id, stage) {
+  const [k, dy] = A_ICON[id], st = stage == null ? 3 : stage, a = { sp: id, stage: st, dir: 1, ph: 0, mv: false, col: '#f08a3c', col2: '#f7c35a' };
+  iconCanvas(cv, (c, W, H) => {
+    if (st < 2) drawAnimal(c, a, W / 2, H - 9 * W / 46, 2.3 * W / 46, .3, {}, true);
+    else drawAnimal(c, a, W / 2 + (A_DX[id] || 0) * (st === 2 ? YOUNG : 1), H / 2 + dy, k * W / 46, .3, {});
+  });
 }
 
-window.Biotop = { World, PLANTS, ANIMALS, SEASON, MONTHS, seasonOf, drawPlantIcon, drawAnimalIcon,
+window.Biotop = { World, PLANTS, ANIMALS, SEASON, MONTHS, STAGES, seasonOf, drawPlantIcon, drawAnimalIcon,
   plantsOf: th => Object.values(PLANTS).filter(p => p.theme === th) };
 })();

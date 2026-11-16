@@ -124,6 +124,22 @@
         return '<dt>GEBRACHT VON</dt><dd><div class="sub">' + esc(why) + ' (' + o.plants.length + ')</div>' +
             '<div class="bio-plist">' + plantList(o.plants) + '</div></dd>';
     }
+    // Entwicklung: Ei, Baby, Jungtier, ausgewachsen (Biotop.STAGES). Wie bei
+    // den Pflanzen waechst ein Tier nur bis zum letzten Tag seines Monats.
+    function stageRow(a) {
+        const si = world.stageInfo(a);
+        let txt;
+        if (si.next == null) { txt = 'ausgewachsen seit ' + dayName(si.fullDay); }
+        else if (si.next > cur.length) { txt = 'Der Monat endet vorher, es bleibt ' + (si.stage === 2 ? 'ein Jungtier' : si.stage === 1 ? 'ein Baby' : 'ein Ei') + '.'; }
+        else {
+            const left = si.next - world.day, when = (left === 1 ? 'morgen' : 'in ' + days(left)) + ', am ' + dayName(si.next);
+            txt = si.stage === 0 ? 'schlüpft ' + when : si.stage === 1 ? 'wird ' + when + ' zum Jungtier' : 'ausgewachsen ' + when;
+        }
+        const steps = B.STAGES.map((x, i) => '<span' + (i === si.stage ? '' : ' class="sub"') + '>' + esc(i === 3 ? 'erwachsen' : i === 1 && a.sp === 'schmetterling' ? 'Raupe' : x.name) + '</span>').join(' <span class="sub">›</span> ');
+        return '<dt>ENTWICKLUNG</dt><dd><span class="pct">' + esc(si.stage === 3 ? 'Ausgewachsen' : si.name) + '</span>' +
+            '<div class="bio-prog"><i style="width:' + Math.round(si.g * 100) + '%"></i></div>' +
+            '<div class="sub">' + steps + '</div><div class="sub">' + esc(txt) + '</div></dd>';
+    }
     function showAnimal(a) {
         const o = world.animalOrigin(a);
         if (!o) { info.hidden = true; world.selected = null; world.dirty = true; return; }
@@ -131,15 +147,16 @@
         info.innerHTML =
             '<button class="x" id="bio-info-x" title="Schließen">×</button>' +
             '<div class="head"><canvas class="bio-icon" id="bio-info-icon"></canvas><div>' +
-            '<div class="cg nm">' + esc(a.name) + '</div><div class="ps">Tier ' + (o.j + 1) + ' von ' + o.of + ' dieser Art</div></div></div>' +
+            '<div class="cg nm">' + esc(a.name) + '</div><div class="ps">' + esc(world.stageInfo(a).name) + ' · Tier ' + (o.j + 1) + ' von ' + o.of + ' dieser Art</div></div></div>' +
             '<dl>' +
             '<dt>ALTER</dt><dd>' + (world.day - o.d ? days(world.day - o.d) : 'heute gekommen') +
             '<div class="sub">kam am ' + esc(dayName(o.d)) + '</div></dd>' +
+            stageRow(a) +
             '<dt>REGEL</dt><dd>' + esc(def.rule) + '</dd>' +
             originRow(a, o) +
             '</dl>';
         info.hidden = false;
-        B.drawAnimalIcon($('bio-info-icon'), a.sp);
+        B.drawAnimalIcon($('bio-info-icon'), a.sp, a.stage);
         $('bio-info-x').onclick = () => world.select(null);
     }
 
@@ -153,7 +170,7 @@
         if (!e || e === world.selected) { tip.hidden = true; return; }
         if (e.sp) {
             const o = world.animalOrigin(e);
-            tip.innerHTML = '<div>' + esc(e.name) + '</div><div class="sub">' + (o ? esc(sinceText(o.d)) + ' · Klick für Herkunft' : '') + '</div>';
+            tip.innerHTML = '<div>' + esc(world.stageInfo(e).label) + '</div><div class="sub">' + (o ? esc(sinceText(o.d)) + ' · Klick für Herkunft' : '') + '</div>';
         } else {
             const p = B.PLANTS[e.plant], gr = world.growth(e);
             tip.innerHTML = '<div>' + esc(p.name) + ' · ' + pct(gr.g) + '</div><div class="sub">' + esc(srcName(e)) + '</div>';
